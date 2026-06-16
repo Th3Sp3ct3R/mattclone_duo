@@ -1,0 +1,77 @@
+// Minimalist black & white design tokens + shared base styles.
+// This file is `@use`d by `src/primitives.scss` and should contain only CSS rules (no @use).
+
+@import '@julio/design-tokens/tokens.css';
+
+:where(
+    .ui-Button,
+    .ui-Input,
+    .ui-SelectTrigger,
+    .ui-MenuTrigger,
+    .ui-PopoverTrigger,
+    .ui-DialogTrigger,
+    .ui-AlertDialogTrigger
+  ) {
+  font-family: var(--ui-font);
+}
+
+:where(
+    .ui-MenuPopup,
+    .ui-SelectPopup,
+    .ui-PopoverPopup,
+    .ui-DialogPopup,
+    .ui-AlertDialogPopup,
+    .ui-TooltipPopup,
+    .ui-PreviewCardPopup,
+    .ui-AutocompletePopup,
+    .ui-ComboboxPopup,
+    .ui-ContextMenuPopup
+  ) {
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+
+:where(
+    .ui-DialogBackdrop,
+    .ui-AlertDialogBackdrop,
+    .ui-MenuBackdrop,
+    .ui-SelectBackdrop,
+    .ui-PopoverBackdrop,
+    .ui-ContextMenuBackdrop,
+    .ui-PreviewCardBackdrop,
+    .ui-AutocompleteBackdrop,
+    .ui-ComboboxBackdrop
+  ) {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.36);
+}
+
+:where(
+    .ui-MenuItem,
+    .ui-ContextMenuItem,
+    .ui-SelectItem,
+    .ui-AutocompleteItem,
+    .ui-ComboboxItem,
+    .ui-NavigationMenuLink
+  ) {
+  cursor: pointer;
+  border-radius: var(--ui-radius-sm);
+}
+
+:where(
+    .ui-MenuItem:focus-visible,
+    .ui-ContextMenuItem:focus-visible,
+    .ui-SelectItem:focus-visible,
+    .ui-AutocompleteItem:focus-visible,
+    .ui-ComboboxItem:focus-visible,
+    .ui-NavigationMenuLink:focus-visible
+  ) {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+

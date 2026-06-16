@@ -1,0 +1,136 @@
+.c-AppSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-medium);
+  height: 100%;
+  min-height: 0;
+}
+
+.c-AppSidebar__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border);
+  background: rgba(0, 0, 0, 0.04);
+  padding: var(--ui-space-xsmall) var(--ui-space-small);
+  font-weight: 600;
+}
+
+.c-AppSidebar__nav {
+  display: grid;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--ui-space-xxsmall);
+}
+
+.c-AppSidebar__group,
+.c-AppSidebar__item {
+  display: grid;
+  gap: 4px;
+}
+
+.c-AppSidebar__toggle {
+  display: block;
+  position: relative;
+  width: 100%;
+  font-family: var(--ui-font);
+  cursor: pointer;
+  text-align: left;
+  appearance: none;
+  -webkit-appearance: none;
+  color: inherit;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  padding: var(--ui-space-xsmall) var(--ui-space-small);
+  background: transparent;
+}
+
+.c-AppSidebar__toggle:hover {
+  background: color-mix(in srgb, var(--ui-fg) 10%, transparent);
+}
+
+.c-AppSidebar__toggle.is-active {
+  background: color-mix(in srgb, var(--ui-fg) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ui-fg) 35%, var(--ui-border));
+  color: var(--ui-fg);
+  font-weight: 600;
+}
+
+.c-AppSidebar__toggle.is-open {
+  border-color: var(--ui-border);
+}
+
+.c-AppSidebar__chevron {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 160ms ease;
+}
+
+.c-AppSidebar__toggle.is-open .c-AppSidebar__chevron {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.c-AppSidebar__children {
+  display: grid;
+  gap: 6px;
+  padding-left: calc(12px + (var(--nav-depth, 0) * 10px));
+}
+
+.c-AppSidebar__item {
+  padding-left: calc(4px + (var(--nav-depth, 0) * 10px));
+}
+
+.c-AppSidebar__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.c-AppSidebar__link:hover {
+  background: color-mix(in srgb, var(--ui-fg) 10%, transparent);
+}
+
+.c-AppSidebar__link.is-active {
+  background: color-mix(in srgb, var(--ui-fg) 18%, transparent);
+  border-color: color-mix(in srgb, var(--ui-fg) 45%, var(--ui-border));
+  color: var(--ui-fg);
+  font-weight: 600;
+}
+
+.c-AppSidebar__label {
+  font-weight: inherit;
+}
+
+.c-AppSidebar__labelInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.c-AppSidebar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.c-AppSidebar__icon svg {
+  display: block;
+}
+
+.c-AppSidebar__labelText {
+  font-weight: inherit;
+}
+
+.c-AppSidebar__footer {
+  margin-top: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: var(--ui-space-small);
+  display: grid;
+  gap: var(--ui-space-small);
+  background: var(--ui-bg);
+}

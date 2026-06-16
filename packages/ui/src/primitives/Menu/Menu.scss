@@ -1,0 +1,25 @@
+/* Minimal menu */
+.ui-MenuPopup {
+  padding: 6px;
+  min-width: 200px;
+}
+
+.ui-MenuItem,
+.ui-MenuCheckboxItem,
+.ui-MenuRadioItem {
+  padding: 8px 10px;
+}
+
+.ui-MenuItem:hover,
+.ui-MenuCheckboxItem:hover,
+.ui-MenuRadioItem:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ui-MenuSeparator {
+  height: 1px;
+  background: var(--ui-border);
+  margin: 6px;
+}
+
+

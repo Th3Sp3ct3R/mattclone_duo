@@ -1,0 +1,22 @@
+/* Breadcrumbs */
+.c-Breadcrumbs {
+  font-size: 13px;
+  color: var(--ui-muted);
+}
+
+.c-Breadcrumbs__link {
+  color: inherit;
+}
+
+.c-Breadcrumbs__link:hover {
+  color: var(--ui-fg);
+}
+
+.c-Breadcrumbs__sep {
+  opacity: 0.6;
+  padding: 0 6px;
+}
+
+
+
+

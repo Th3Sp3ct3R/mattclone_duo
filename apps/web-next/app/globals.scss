@@ -1,0 +1,1042 @@
+@use '@julio/ui/base.scss';
+@use '@julio/ui/primitives.scss';
+@use '@julio/ui/compounds.scss';
+@use '@julio/ui/layout.scss';
+
+@font-face {
+  font-family: 'CalSans';
+  src: url('/fonts/Cal_Sans/CalSans-Regular.ttf') format('truetype');
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito/Nunito-VariableFont_wght.ttf') format('truetype');
+  font-display: swap;
+  font-weight: 200 1000;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito/Nunito-Italic-VariableFont_wght.ttf') format('truetype');
+  font-display: swap;
+  font-weight: 200 1000;
+  font-style: italic;
+}
+
+:root {
+  --ui-font: 'Nunito', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+    'Apple Color Emoji', 'Segoe UI Emoji';
+  --ui-font-brand: 'CalSans', var(--ui-font);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+.AppShell {
+  --app-header-height: 64px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.AppShell--noHeader {
+  --app-header-height: 0px;
+}
+
+.AppShellHeader {
+  height: var(--app-header-height);
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.AppShellHeader.is-visible {
+  background: rgba(248, 250, 252, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+.AppShellHeader.c-ScrollRevealHeader {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.AppShellHeader:not(.is-visible) .c-AppHeader {
+  border-bottom-color: transparent;
+}
+
+.AppShellHeader:not(.is-visible) .c-AppHeaderBrand {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.AppHeaderBrandLogo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.AppHeaderLogo {
+  width: 42px;
+  height: auto;
+  display: block;
+}
+
+.AppHeaderLogo--dark {
+  display: none;
+}
+
+.AppSidebarBrand .AppHeaderLogo--dark {
+  display: block;
+}
+
+.AppHeaderLogoWordmark {
+  display: grid;
+  line-height: 0.9;
+  font-size: 18px;
+}
+
+.AppHeaderLogoWordmark span {
+  display: block;
+}
+
+.AppShellHeader:not(.is-visible) .c-AppHeaderNav__link,
+.AppShellHeader:not(.is-visible) .c-AppHeaderNav__cta .ui-Button {
+  color: #f8fafc;
+}
+
+.AppShellHeader--home:not(.is-visible) {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.AppShellHeader--home:not(.is-visible) .c-AppHeader {
+  border-bottom-color: transparent;
+  color: #f8fafc;
+}
+
+.AppShellHeader--home:not(.is-visible) .c-AppHeaderBrand {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.AppShellHeader--home:not(.is-visible) .c-AppHeaderNav__link,
+.AppShellHeader--home:not(.is-visible) .c-AppHeaderNav__cta .ui-Button {
+  color: #f8fafc;
+}
+
+.AppShellHeader--home:not(.is-visible) .c-AppHeaderNav__link::after {
+  background: #f8fafc;
+  transform: scaleX(0);
+}
+
+.AppShellHeader--home.is-visible .c-AppHeader {
+  color: #0b0f19;
+}
+
+.AppShellHeader--home.is-visible .c-AppHeaderNav__link,
+.AppShellHeader--home.is-visible .c-AppHeaderNav__cta .ui-Button {
+  color: #0b0f19;
+}
+
+.AppShellHeader--home.is-visible .c-AppHeaderNav__link::after {
+  background: #0b0f19;
+}
+
+.AppShellHeader--home.is-visible .AppHeaderLogo--light {
+  display: none;
+}
+
+.AppShellHeader--home.is-visible .AppHeaderLogo--dark {
+  display: block;
+}
+
+
+.c-AppHeaderBrand__name {
+  font-family: var(--ui-font-brand, var(--ui-font));
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.HomePageAnchor {
+  scroll-margin-top: calc(var(--app-header-height) + var(--ui-space-large));
+}
+
+.AppShellMain {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: calc(100dvh - var(--app-header-height));
+  overflow: hidden;
+}
+
+.AppShellMain .c-PageLayout {
+  height: 100%;
+  align-items: stretch;
+  gap: 0;
+}
+
+.AppShellMain .c-PageLayout__main {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.AppShellMain .c-PageLayout__sidebar {
+  position: sticky;
+  top: 0;
+  align-self: stretch;
+  height: 100%;
+}
+
+.AppShellMain .c-AppSidebar {
+  height: 100%;
+  border-radius: 0;
+  border-top: 0;
+  border-left: 0;
+  border-bottom: 0;
+  border-right: 1px solid var(--ui-border);
+}
+
+.AppShellPage {
+  padding-top: var(--ui-space-large);
+  padding-bottom: var(--ui-space-large);
+}
+
+.AppShellNav {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+.AppShellNav .c-NavLink {
+  display: block;
+  padding: var(--ui-space-xsmall) var(--ui-space-small);
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid var(--ui-border);
+}
+
+.AppSidebarStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-medium);
+  height: 100%;
+  min-height: 0;
+}
+
+.AppSidebarBrand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border);
+  background: rgba(0, 0, 0, 0.04);
+  padding: var(--ui-space-xsmall) var(--ui-space-small);
+  font-weight: 600;
+}
+
+.AppShellNav {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+  overflow-y: auto;
+  padding-bottom: var(--ui-space-xxsmall);
+}
+
+.AppSidebarUser {
+  margin-top: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: var(--ui-space-small);
+  display: grid;
+  gap: var(--ui-space-small);
+  background: var(--ui-bg);
+}
+
+.AppSidebarUserMeta {
+  display: grid;
+  gap: var(--ui-space-xxsmall);
+}
+
+.AppSidebarUserEmail {
+  font-weight: 600;
+}
+
+.AppSidebarUserRole {
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.AppSidebarUserActions {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+.EditorShell {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+.EditorToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xsmall);
+}
+
+.EditorContent {
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  padding: var(--ui-space-small);
+  min-height: 260px;
+}
+
+.EditorContent .ProseMirror {
+  outline: none;
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.EditorContent .ProseMirror > * {
+  margin: 0;
+}
+
+.EditorHtmlPane textarea {
+  width: 100%;
+  min-height: 240px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
+
+.HomeHeroVideo {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: #f8fafc;
+  background: #0b0f1a;
+}
+
+.HomeHeroVideoMedia {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.HomeHeroVideoOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 10, 18, 0.55);
+}
+
+.HomeHeroVideoContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.HomeHeroVideoTitle {
+  margin: 0;
+  display: grid;
+  gap: var(--ui-space-small);
+  font-family: var(--ui-font-brand, var(--ui-font));
+  font-size: clamp(56px, 10vw, 140px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: HomeHeroVideoIntro 700ms ease 120ms forwards;
+}
+
+.HomeHeroVideoLogo {
+  width: clamp(81px, 15.3vw, 209px);
+  height: auto;
+  display: block;
+}
+
+.HomeHeroVideoWordmark {
+  display: grid;
+  gap: 6px;
+  font-size: clamp(88px, 14.3vw, 208px);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  font-weight: 300;
+}
+
+.HomeHeroVideoWordmark span {
+  display: block;
+}
+
+@keyframes HomeHeroVideoIntro {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .HomeHeroVideoTitle {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.AppFooterBrand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.AppFooterLogo {
+  width: 180px;
+  height: auto;
+  display: block;
+}
+
+.HomeHero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xlarge);
+  align-items: center;
+}
+
+.HomeHeroContent,
+.HomeHeroMockup {
+  flex: 1 1 320px;
+}
+
+.HomeHeroContent {
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+.Eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
+.HomeHeroTitle {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+}
+
+.HomeHeroLead {
+  margin: 0;
+  color: var(--ui-muted);
+  max-width: 640px;
+}
+
+.HomeHeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-small);
+}
+
+.HomeHeroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-medium);
+}
+
+.HomeHeroMockup {
+  padding: var(--ui-space-medium);
+  display: grid;
+  gap: var(--ui-space-medium);
+  min-height: 260px;
+}
+
+.HomeHeroMockupHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xsmall);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.HomeHeroMockupPill {
+  margin-left: auto;
+  font-size: 11px;
+  padding: var(--ui-space-xxsmall) var(--ui-space-xsmall);
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  color: var(--ui-muted);
+}
+
+.HomeHeroMockupBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-small);
+}
+
+.HomeHeroMockupRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-small);
+}
+
+.HomeHeroMockupCard {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: var(--ui-space-small);
+  min-height: 72px;
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+.HomeHeroMockupLine {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.HomeHeroMockupLine.short {
+  width: 60%;
+}
+
+.HomeFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--ui-space-large);
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .HomeFeatureGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.HomeFeatureGrid .ui-Card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xsmall);
+  padding: var(--ui-space-large);
+  min-height: 220px;
+  height: 100%;
+}
+
+.HomeCardBadge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--ui-space-small);
+  color: var(--ui-mint);
+  background: color-mix(in srgb, var(--ui-mint) 18%, transparent);
+}
+
+.HomeServiceArea .HomeCardBadge {
+  width: 96px;
+  height: 96px;
+  border-radius: 28px;
+  margin-bottom: var(--ui-space-medium);
+  background: transparent;
+  box-shadow: none;
+}
+
+.HomeServiceArea .HomeFeatureGrid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--ui-space-xlarge);
+}
+
+.HomeServiceArea .HomeFeatureGrid .ui-Card {
+  align-items: center;
+  text-align: center;
+  padding: calc(var(--ui-space-large) + var(--ui-space-small));
+  padding-top: calc(var(--ui-space-xlarge) + var(--ui-space-medium));
+  padding-bottom: calc(var(--ui-space-xlarge) + var(--ui-space-medium));
+  min-height: 320px;
+  background: rgba(248, 250, 252, 0.06);
+  border-color: rgba(248, 250, 252, 0.12);
+  box-shadow: 0 20px 50px rgba(6, 10, 18, 0.25);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.HomeServiceArea .HomeFeatureGrid .ui-Card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(58, 212, 167, 0.35);
+  box-shadow: 0 28px 70px rgba(6, 10, 18, 0.45);
+}
+
+.HomeHighlightsArea .HomeFeatureGrid .ui-Card {
+  background: rgba(248, 250, 252, 0.06);
+  border-color: rgba(248, 250, 252, 0.12);
+  box-shadow: 0 20px 50px rgba(6, 10, 18, 0.25);
+  padding: calc(var(--ui-space-large) + var(--ui-space-small));
+  min-height: 260px;
+  text-align: left;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.HomeHighlightsArea .HomeFeatureGrid .ui-Card:hover {
+  border-color: rgba(58, 212, 167, 0.35);
+  box-shadow: 0 28px 70px rgba(6, 10, 18, 0.45);
+  transform: translateY(-3px);
+}
+
+.HomeServiceArea .HomeCardBadge {
+  background: transparent;
+  box-shadow: none;
+}
+
+.HomeHighlightsArea .HomeCardBadge {
+  width: 112px;
+  height: 112px;
+  border-radius: 32px;
+  margin: 0 0 var(--ui-space-medium);
+}
+
+.HomeHighlightsArea .HomeFeatureGrid {
+  gap: var(--ui-space-xlarge);
+}
+
+.HomeHighlightsArea .HomeFeatureGrid .ui-Card h3 {
+  margin: 0 0 var(--ui-space-xxsmall);
+  font-size: 20px;
+}
+
+.HomeHighlightsArea .HomeFeatureGrid .ui-Card .Kicker {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+.HomeHighlightsArea .c-Section {
+  gap: var(--ui-space-large);
+}
+
+.HomeProfilesArea .c-Section {
+  gap: var(--ui-space-large);
+}
+
+.HomeProfilesGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-space-large);
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .HomeProfilesGrid--managingPartners {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.HomeProfilesGroup {
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+.HomeProfilesGroup + .HomeProfilesGroup {
+  margin-top: var(--ui-space-xlarge);
+}
+
+.HomeProfilesGroupTitle {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 30px);
+  letter-spacing: -0.01em;
+}
+
+.HomeProfilesCard.ui-Card {
+  padding: calc(var(--ui-space-large) + var(--ui-space-xxsmall));
+  box-shadow: 0 16px 40px rgba(6, 10, 18, 0.08);
+}
+
+.HomeClientsArea .c-Section {
+  gap: var(--ui-space-large);
+}
+
+.HomeClientsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--ui-space-medium);
+  row-gap: 100px;
+  margin-top: 50px;
+}
+
+.HomeClientLogoTile {
+  min-height: 140px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: var(--ui-space-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.HomeClientLogoImage {
+  width: auto;
+  height: clamp(72px, 9vw, 120px);
+  max-width: min(360px, 100%);
+  max-height: 120px;
+  object-fit: contain;
+  display: block;
+}
+
+.HomeClientsArea--dark .HomeClientLogoTile {
+  background: rgba(248, 250, 252, 0.92);
+  border-radius: var(--ui-radius);
+}
+
+@media (min-width: 768px) {
+  .HomeClientsGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .HomeClientsGrid > :nth-child(1),
+  .HomeClientsGrid > :nth-child(2),
+  .HomeClientsGrid > :nth-child(3) {
+    grid-column: span 2;
+  }
+
+  .HomeClientsGrid > :nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .HomeClientsGrid > :nth-child(5) {
+    grid-column: 4 / span 2;
+  }
+}
+
+@media (min-width: 1200px) {
+  .HomeClientLogoImage {
+    height: clamp(80px, 7vw, 120px);
+  }
+}
+
+.HomeServiceArea .HomeFeatureGrid .ui-Card h3 {
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.HomeServiceArea .HomeFeatureGrid .ui-Card .Kicker {
+  color: rgba(248, 250, 252, 0.7);
+}
+
+.c-SectionBand--light .HomeCardBadge,
+.c-SectionBand--dark .HomeCardBadge {
+  color: var(--ui-mint);
+}
+
+.HomeMain .c-SectionBand {
+  padding-top: var(--ui-space-section-vertical-padding);
+  padding-bottom: var(--ui-space-section-vertical-padding);
+}
+
+.HomeMain .HomeHeroVideo {
+  padding-top: var(--ui-space-section-vertical-padding);
+  padding-bottom: var(--ui-space-section-vertical-padding);
+}
+
+.HomeBlogSection .c-Section__actions {
+  align-items: center;
+}
+
+.HomeBlogSection {
+  overflow: hidden;
+}
+
+.HomeBlogCarousel .c-Carousel__track {
+  padding-bottom: var(--ui-space-small);
+}
+
+.HomeBlogCard {
+  height: 100%;
+}
+
+.BlogHero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-medium);
+}
+
+.BlogHero > * {
+  flex: 1 1 280px;
+}
+
+.BlogGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-medium);
+}
+
+.BlogGrid > .c-PostCard {
+  flex: 1 1 260px;
+}
+
+.BlogSidebarCard {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+.BlogPostHeader {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+  margin-bottom: var(--ui-space-medium);
+}
+
+.BlogPostPage {
+  padding-top: 50px;
+}
+
+.BlogPostPage .c-SectionBand + .c-SectionBand {
+  padding-top: 0;
+}
+
+.BlogPostHeader h1 {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.BlogPostHeader .Kicker {
+  color: var(--ui-muted);
+  font-size: 1rem;
+  max-width: 720px;
+}
+
+.BlogPostMeta {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ui-muted);
+}
+
+.BlogPostCover {
+  width: 100%;
+  max-height: 520px;
+  border-radius: var(--ui-radius);
+  margin-top: var(--ui-space-medium);
+  margin-bottom: 0;
+  box-shadow: 0 18px 40px rgba(6, 10, 18, 0.14);
+  object-fit: cover;
+  object-position: center;
+}
+
+.BlogPostBody {
+  display: grid;
+  gap: var(--ui-space-medium);
+  line-height: 1.8;
+  font-size: 1.05rem;
+  color: var(--ui-fg);
+}
+
+.BlogPostBody h2 {
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.2;
+  margin: var(--ui-space-medium) 0 var(--ui-space-xsmall);
+}
+
+.BlogPostBody h3 {
+  font-size: 20px;
+  line-height: 1.3;
+  margin: var(--ui-space-small) 0 var(--ui-space-xxsmall);
+}
+
+.BlogPostBody p {
+  margin: 0;
+  color: var(--ui-muted);
+}
+
+.BlogPostBody a {
+  color: var(--ui-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.BlogPostBody ul,
+.BlogPostBody ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--ui-muted);
+}
+
+.BlogPostBody li {
+  margin: 0;
+}
+
+.BlogPostBody blockquote {
+  margin: 0;
+  padding: var(--ui-space-small) var(--ui-space-medium);
+  border-left: 3px solid var(--ui-primary);
+  background: rgba(6, 10, 18, 0.04);
+  border-radius: var(--ui-radius);
+  color: var(--ui-fg);
+}
+
+.BlogPostBody img {
+  max-width: 100%;
+  max-height: 520px;
+  border-radius: var(--ui-radius);
+  height: auto;
+  object-fit: contain;
+}
+
+.EventsCalendarToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--ui-space-small);
+}
+
+.EventsCalendarCard {
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+.EventsList {
+  display: grid;
+  gap: var(--ui-space-medium);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.EventsEmptyCard {
+  display: grid;
+  gap: var(--ui-space-xxsmall);
+}
+
+.EventDetailHeader {
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.EventDetailMeta {
+  display: grid;
+  gap: var(--ui-space-xxsmall);
+}
+
+.EventDetailBody {
+  display: grid;
+  gap: var(--ui-space-medium);
+  line-height: 1.7;
+}
+
+.page-section-stack { 
+  padding-bottom: var(--ui-space-large);
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+.page-section-stack-tight {
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.page-section-stack-tight > .ui-Button {
+  margin-top: var(--ui-space-medium);
+}
+
+.ContactSplit {
+  display: grid;
+  gap: var(--ui-space-large);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: stretch;
+}
+
+.ContactSplit__image {
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-card);
+  min-height: 360px;
+}
+
+.ContactSplit__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ContactSplit__form {
+  height: 100%;
+  display: grid;
+  align-content: start;
+}
+
+@media (max-width: 900px) {
+  .ContactSplit {
+    grid-template-columns: 1fr;
+  }
+  .ContactSplit__image {
+    min-height: 240px;
+  }
+}
+
+.page-section-header {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+.booking-page {
+  padding-top: var(--ui-space-xlarge);
+  padding-bottom: 48px;
+}
+
+.booking-grid {
+  display: grid;
+  gap: var(--ui-space-large);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+.booking-column {
+  display: grid;
+  gap: var(--ui-space-large);
+}
+
+.booking-card-stack {
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.login-panel {
+  width: 100%;
+  max-width: 720px;
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.availability-week-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr 120px;
+  gap: var(--ui-space-xsmall);
+}
+
+.availability-date-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr 1fr 120px;
+  gap: var(--ui-space-xsmall);
+}
+
+.route-override-card {
+  background: var(--ui-bg);
+}
+
+
+

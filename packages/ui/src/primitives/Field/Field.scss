@@ -1,0 +1,23 @@
+/* Minimal field */
+.ui-FieldRoot {
+  display: grid;
+  gap: 6px;
+  font-family: var(--ui-font);
+}
+
+.ui-FieldLabel {
+  font-weight: 600;
+  color: var(--ui-fg);
+}
+
+.ui-FieldDescription {
+  color: var(--ui-muted);
+  font-size: 0.9rem;
+}
+
+.ui-FieldError {
+  color: var(--ui-error);
+  font-size: 0.9rem;
+}
+
+

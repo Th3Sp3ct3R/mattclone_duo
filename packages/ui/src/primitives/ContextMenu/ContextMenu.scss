@@ -1,0 +1,30 @@
+/* Minimal context menu */
+.ui-ContextMenuTrigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-ContextMenuPopup {
+  padding: 6px;
+  min-width: 180px;
+}
+
+.ui-ContextMenuItem,
+.ui-ContextMenuCheckboxItem,
+.ui-ContextMenuRadioItem {
+  padding: 8px 10px;
+}
+
+.ui-ContextMenuItem:hover,
+.ui-ContextMenuCheckboxItem:hover,
+.ui-ContextMenuRadioItem:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ui-ContextMenuSeparator {
+  height: 1px;
+  background: var(--ui-border);
+  margin: 6px;
+}
+
+

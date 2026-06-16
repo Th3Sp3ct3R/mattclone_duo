@@ -1,0 +1,43 @@
+/* Minimal tabs */
+.ui-TabsList {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+}
+
+.ui-TabsTab {
+  border: 0;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: var(--ui-radius-sm);
+  cursor: pointer;
+  font-family: var(--ui-font);
+}
+
+.ui-TabsTab:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ui-TabsTab[data-state='active'],
+.ui-TabsTab[aria-selected='true'] {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--ui-border-strong);
+}
+
+.ui-TabsTab:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-TabsPanel {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  color: var(--ui-muted);
+}
+
+

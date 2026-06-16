@@ -1,0 +1,38 @@
+.c-NestedTabNavigator {
+  display: grid;
+  gap: 12px;
+}
+
+.c-NestedTabNavigator__root {
+  display: grid;
+  gap: 12px;
+}
+
+.c-NestedTabNavigator__list {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.c-NestedTabNavigator__panel {
+  padding: 0;
+  border: 0;
+}
+
+.c-NestedTabNavigator__nested {
+  display: grid;
+  gap: 10px;
+}
+
+.c-NestedTabNavigator__nestedList {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.c-NestedTabNavigator__nestedPanel {
+  padding: 0;
+  border: 0;
+}
+

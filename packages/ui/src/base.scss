@@ -1,0 +1,269 @@
+@use './tokens.scss';
+
+/* Minimal black/white baseline for apps consuming @julio/ui.
+   Intentionally light-touch so products can theme freely by overriding CSS vars. */
+
+:where(*, *::before, *::after) {
+  box-sizing: border-box;
+}
+
+:where(html, body) {
+  height: 100%;
+}
+
+:where(body) {
+  margin: 0;
+  font-family: var(--ui-font);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  line-height: 1.5;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+:where(a:hover) {
+  text-decoration: underline;
+  text-decoration-color: var(--ui-primary);
+}
+
+:where(a:active) {
+  text-decoration: underline;
+  text-decoration-color: var(--ui-primary);
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+:where(h1) {
+  font-size: 30px;
+}
+
+:where(h2) {
+  font-size: 22px;
+}
+
+:where(h3) {
+  font-size: 18px;
+}
+
+:where(p) {
+  margin: 0;
+}
+
+:where(code, pre) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+}
+
+/* Common layout helpers used by the boilerplate apps */
+:where(.container) {
+  width: 100%;
+  margin: 0 auto;
+}
+
+:where(.content-container) {
+  width: 100%;
+  margin: 0 auto;
+  padding-left: var(--ui-space-small);
+  padding-right: var(--ui-space-small);
+}
+
+@media (min-width: 768px) {
+  :where(.content-container) {
+    padding-left: var(--ui-space-xxxlarge);
+    padding-right: var(--ui-space-xxxlarge);
+  }
+}
+
+:where(.grid) {
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+@media (min-width: 768px) {
+  :where(.grid) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+:where(.Kicker) {
+  color: var(--ui-muted);
+}
+
+/* Form-y defaults (works even if apps don't style their own forms yet) */
+:where(label) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xsmall);
+  font-size: 13px;
+  color: var(--ui-muted);
+}
+
+:where(form) {
+  font-family: var(--ui-font);
+}
+
+:where(.Error) {
+  font-size: 13px;
+  color: var(--ui-fg);
+  background: rgba(0, 0, 0, 0.04);
+  background: color-mix(in srgb, var(--ui-error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-error) 30%, transparent);
+  border-radius: var(--ui-radius-sm);
+  padding: var(--ui-space-xsmall) var(--ui-space-small);
+}
+
+/* Layout utilities */
+:where(.layout-stack) {
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+:where(.layout-stack-gap-6) {
+  display: grid;
+  gap: var(--ui-space-xxsmall);
+}
+
+:where(.layout-stack-gap-8) {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+:where(.layout-stack-gap-12) {
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+:where(.layout-stack-gap-16) {
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+:where(.layout-stack-gap-20) {
+  display: grid;
+  gap: calc(var(--ui-space-small) + var(--ui-space-xsmall));
+}
+
+:where(.layout-stack-gap-24) {
+  display: grid;
+  gap: var(--ui-space-large);
+}
+
+:where(.layout-stack-gap-32) {
+  display: grid;
+  gap: var(--ui-space-xlarge);
+}
+
+:where(.layout-inline) {
+  display: flex;
+  gap: var(--ui-space-small);
+}
+
+:where(.layout-inline-gap-8) {
+  display: flex;
+  gap: var(--ui-space-xsmall);
+}
+
+:where(.layout-inline-gap-12) {
+  display: flex;
+  gap: var(--ui-space-small);
+}
+
+:where(.layout-inline-gap-16) {
+  display: flex;
+  gap: var(--ui-space-medium);
+}
+
+:where(.layout-inline-gap-24) {
+  display: flex;
+  gap: var(--ui-space-large);
+}
+
+:where(.layout-inline-center) {
+  display: flex;
+  align-items: center;
+}
+
+:where(.layout-inline-between) {
+  display: flex;
+  justify-content: space-between;
+}
+
+:where(.layout-inline-end) {
+  display: flex;
+  justify-content: flex-end;
+}
+
+:where(.layout-inline-wrap) {
+  flex-wrap: wrap;
+}
+
+:where(.layout-center-screen) {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+:where(.text-muted) {
+  color: var(--ui-muted);
+}
+
+:where(.text-semibold) {
+  font-weight: 600;
+}
+
+:where(.text-stat) {
+  font-size: 22px;
+}
+
+/* Brand wordmark (apps provide --ui-font-brand) */
+:where(.ui-BrandWordmark) {
+  font-family: var(--ui-font-brand, var(--ui-font));
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+:where(.form-select) {
+  width: 100%;
+  padding: var(--ui-space-small);
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  font-family: var(--ui-font);
+}
+
+:where(.form-textarea) {
+  width: 100%;
+  padding: var(--ui-space-small);
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  font-family: var(--ui-font);
+}
+
+:where(.layout-top-space-8) {
+  margin-top: var(--ui-space-xsmall);
+}
+
+:where(.layout-top-space-12) {
+  margin-top: var(--ui-space-small);
+}
+
+:where(.layout-top-space-16) {
+  margin-top: var(--ui-space-medium);
+}
+
+:where(.layout-bottom-space-8) {
+  margin-bottom: var(--ui-space-xsmall);
+}

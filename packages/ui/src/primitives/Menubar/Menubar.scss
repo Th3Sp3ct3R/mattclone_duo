@@ -1,0 +1,12 @@
+/* Minimal menubar */
+.ui-Menubar {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+}
+
+

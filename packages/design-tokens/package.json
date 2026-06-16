@@ -1,0 +1,20 @@
+{
+  "name": "@julio/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./tokens": "./src/tokens.js",
+    "./css": "./src/css.js",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "lint": "node -e \"console.log('design-tokens: no lint step')\"",
+    "build:css": "node ./scripts/build-css.js",
+    "verify:css": "node ./scripts/verify-css.js",
+    "build": "node ./scripts/build-css.js"
+  }
+}
+

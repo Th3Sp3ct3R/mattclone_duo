@@ -1,0 +1,17 @@
+.c-PromptDialog__field {
+  display: grid;
+  gap: var(--ui-space-xxsmall);
+}
+
+.c-PromptDialog__label {
+  font-size: 0.9rem;
+  color: var(--ui-muted);
+}
+
+.c-PromptDialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xsmall);
+  justify-content: flex-end;
+  margin-top: var(--ui-space-small);
+}

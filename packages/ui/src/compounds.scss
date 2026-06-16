@@ -1,0 +1,24 @@
+// Aggregator for @julio/ui compound styles.
+@use './tokens.scss';
+
+@use './compounds/Breadcrumbs/Breadcrumbs.scss';
+@use './compounds/ChartCard/ChartCard.scss';
+@use './compounds/DataTable/DataTable.scss';
+@use './compounds/NavLink/NavLink.scss';
+@use './compounds/RoleMatrix/RoleMatrix.scss';
+@use './compounds/PostCard/PostCard.scss';
+@use './compounds/EventCard/EventCard.scss';
+@use './compounds/EventCalendar/EventCalendar.scss';
+@use './compounds/Carousel/Carousel.scss';
+@use './compounds/LocaleSelect/LocaleSelect.scss';
+@use './compounds/TimezoneSelect/TimezoneSelect.scss';
+@use './compounds/FormErrorSummary/FormErrorSummary.scss';
+@use './compounds/BookingCalendarDay/BookingCalendarDay.scss';
+@use './compounds/TimeSlotPicker/TimeSlotPicker.scss';
+@use './compounds/BookingSummaryCard/BookingSummaryCard.scss';
+@use './compounds/ProfileCard/ProfileCard.scss';
+@use './compounds/ChatWidget/ChatWidget.scss';
+@use './compounds/ConfirmDialog/ConfirmDialog.scss';
+@use './compounds/PromptDialog/PromptDialog.scss';
+@use './compounds/ImageUpload/ImageUpload.scss';
+

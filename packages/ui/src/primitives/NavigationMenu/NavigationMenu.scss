@@ -1,0 +1,33 @@
+/* Minimal navigation menu */
+.ui-NavigationMenuList {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+}
+
+.ui-NavigationMenuTrigger {
+  background: transparent;
+  border: 0;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-NavigationMenuTrigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-NavigationMenuPopup {
+  padding: 12px;
+}
+
+.ui-NavigationMenuContent {
+  color: var(--ui-muted);
+}
+
+

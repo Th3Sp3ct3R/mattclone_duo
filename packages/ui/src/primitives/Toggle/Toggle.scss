@@ -1,0 +1,22 @@
+/* Minimal toggle */
+.ui-Toggle {
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.ui-Toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-Toggle[data-state='on'] {
+  background: var(--ui-fg);
+  color: var(--ui-bg);
+  border-color: var(--ui-fg);
+}
+
+

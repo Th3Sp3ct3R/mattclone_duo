@@ -1,0 +1,32 @@
+/* Minimal switch */
+.ui-SwitchRoot {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border-strong);
+  background: var(--ui-bg);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.ui-SwitchRoot:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-SwitchThumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--ui-fg);
+  transform: translateX(0);
+  transition: transform 120ms ease;
+}
+
+.ui-SwitchRoot[data-checked] .ui-SwitchThumb,
+.ui-SwitchThumb[data-checked] {
+  transform: translateX(18px);
+}
+
+

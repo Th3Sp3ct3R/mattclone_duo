@@ -1,0 +1,30 @@
+/* Minimal meter */
+.ui-MeterRoot {
+  display: grid;
+  gap: 8px;
+  font-family: var(--ui-font);
+}
+
+.ui-MeterTrack {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  overflow: hidden;
+}
+
+.ui-MeterIndicator {
+  height: 100%;
+  background: var(--ui-fg);
+}
+
+.ui-MeterLabel {
+  font-weight: 600;
+}
+
+.ui-MeterValue {
+  color: var(--ui-muted);
+  font-size: 0.9rem;
+}
+
+

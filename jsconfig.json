@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "checkJs": false,
+    "baseUrl": ".",
+    "paths": {
+      "@julio/shared": ["packages/shared/src/index.js"],
+      "@julio/ui": ["packages/ui/src/index.js"],
+      "@julio/api-client": ["packages/api-client/src/index.js"],
+      "@julio/api/*": ["apps/api/src/*"]
+    }
+  },
+  "exclude": ["**/node_modules/**", "**/dist/**", "**/coverage/**"]
+}
+
+

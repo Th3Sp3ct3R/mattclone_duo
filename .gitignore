@@ -1,0 +1,93 @@
+### Dependencies
+node_modules/
+
+### Build output
+dist/
+build/
+web-build/
+storybook-static/
+.next/
+out/
+.turbo/
+.storybook/
+
+### Test output
+coverage/
+.nyc_output/
+
+### Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+### Runtime files
+*.pid
+*.pid.lock
+
+### Env (single shared root env; keep example committed)
+.env
+.env.*
+!.env.example
+!.env.sample
+
+### OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+.history/
+
+### Caches
+.cache/
+.eslintcache
+.vite/
+.parcel-cache/
+.storybook-cache/
+.npm/
+.yarn/
+.pnp.*
+.swc/
+*.tsbuildinfo
+
+### Expo / React Native
+.expo/
+.expo-shared/
+expo-env.d.ts
+ios/
+android/
+*.keystore
+*.jks
+*.ipa
+*.apk
+*.aab
+
+### Web app artifacts
+.vercel/
+.netlify/
+
+### Secrets / credentials (defensive – never commit keys or certs)
+*.pem
+*.key
+*.p8
+*.p12
+*.cert
+service-account*.json
+serviceAccount*.json
+credentials*.json
+
+### Foreign lockfiles (this repo uses yarn.lock only)
+package-lock.json
+pnpm-lock.yaml
+
+### Misc
+*.bak
+*.tmp
+*.swp
+
+
+

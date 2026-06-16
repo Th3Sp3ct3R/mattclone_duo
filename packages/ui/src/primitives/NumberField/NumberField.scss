@@ -1,0 +1,39 @@
+/* Minimal number field */
+.ui-NumberFieldRoot {
+  font-family: var(--ui-font);
+}
+
+.ui-NumberFieldGroup {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  background: var(--ui-bg);
+}
+
+.ui-NumberFieldInput {
+  border: 0;
+  outline: none;
+  padding: 10px 12px;
+  width: 72px;
+  text-align: center;
+  font-family: inherit;
+  background: transparent;
+  color: var(--ui-fg);
+}
+
+.ui-NumberFieldIncrement,
+.ui-NumberFieldDecrement {
+  border: 0;
+  background: transparent;
+  color: var(--ui-fg);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.ui-NumberFieldGroup:focus-within {
+  box-shadow: var(--ui-ring);
+}
+
+

@@ -1,0 +1,20 @@
+.c-DialogBackdrop {
+  background: rgba(0, 0, 0, 0.48);
+}
+
+.c-DialogPanel {
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.c-ConfirmDialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xsmall);
+  justify-content: flex-end;
+  margin-top: var(--ui-space-small);
+}

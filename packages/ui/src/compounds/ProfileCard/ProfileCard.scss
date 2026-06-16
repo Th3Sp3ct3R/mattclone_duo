@@ -1,0 +1,60 @@
+.c-ProfileCard {
+  display: grid;
+  gap: var(--ui-space-medium);
+  height: 100%;
+}
+
+.c-ProfileCard__header {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-small);
+}
+
+.c-ProfileCard__image,
+.c-ProfileCard__placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.c-ProfileCard__image {
+  display: block;
+  object-fit: cover;
+  border: 1px solid var(--ui-border);
+}
+
+.c-ProfileCard__placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--ui-primary) 12%, var(--ui-bg));
+  color: var(--ui-fg);
+  border: 1px solid var(--ui-border);
+}
+
+.c-ProfileCard__identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.c-ProfileCard__name {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.c-ProfileCard__role {
+  color: var(--ui-muted);
+  font-size: 14px;
+}
+
+.c-ProfileCard__bio {
+  margin: 0;
+  color: var(--ui-muted);
+  line-height: 1.7;
+  white-space: pre-line;
+}

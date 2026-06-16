@@ -1,0 +1,35 @@
+/* Minimal toolbar */
+.ui-ToolbarRoot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+}
+
+.ui-ToolbarButton,
+.ui-ToolbarLink {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--ui-fg);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.ui-ToolbarButton:focus-visible,
+.ui-ToolbarLink:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-ToolbarSeparator {
+  width: 1px;
+  height: 20px;
+  background: var(--ui-border);
+}
+
+

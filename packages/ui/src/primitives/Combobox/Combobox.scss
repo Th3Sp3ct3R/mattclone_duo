@@ -1,0 +1,48 @@
+/* Minimal combobox */
+.ui-ComboboxRoot {
+  width: 320px;
+  max-width: 100%;
+  font-family: var(--ui-font);
+}
+
+.ui-ComboboxInput {
+  width: 100%;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  padding: 10px 12px;
+}
+
+.ui-ComboboxInput:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-ComboboxPopup {
+  margin-top: 8px;
+  padding: 6px;
+}
+
+.ui-ComboboxList {
+  max-height: 240px;
+  overflow: auto;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.ui-ComboboxItem {
+  padding: 8px 10px;
+}
+
+.ui-ComboboxItem:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ui-ComboboxEmpty {
+  padding: 10px;
+  color: var(--ui-muted);
+}
+
+

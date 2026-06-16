@@ -1,0 +1,30 @@
+/* Minimal progress */
+.ui-ProgressRoot {
+  display: grid;
+  gap: 8px;
+  font-family: var(--ui-font);
+}
+
+.ui-ProgressTrack {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  overflow: hidden;
+}
+
+.ui-ProgressIndicator {
+  height: 100%;
+  background: var(--ui-fg);
+}
+
+.ui-ProgressLabel {
+  font-weight: 600;
+}
+
+.ui-ProgressValue {
+  color: var(--ui-muted);
+  font-size: 0.9rem;
+}
+
+

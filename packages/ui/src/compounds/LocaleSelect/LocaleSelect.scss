@@ -1,0 +1,96 @@
+.c-LocaleSelect {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.c-LocaleSelect__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.c-LocaleSelect__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: var(--ui-space-xxsmall);
+  padding: var(--ui-space-xxsmall);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+  z-index: 20;
+}
+
+.c-LocaleSelect__option {
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.c-LocaleSelect__option.is-selected {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.c-LocaleSelect__flag {
+  width: 28px;
+  height: 28px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.c-LocaleSelect__flag--de {
+  background-image: url('/flags/de.svg');
+}
+
+.c-LocaleSelect__flag--es {
+  background-image: url('/flags/es.svg');
+}
+
+.c-LocaleSelect__flag--fr {
+  background-image: url('/flags/fr.svg');
+}
+
+.c-LocaleSelect__flag--il {
+  background-image: url('/flags/il.svg');
+}
+
+.c-LocaleSelect__flag--it {
+  background-image: url('/flags/it.svg');
+}
+
+.c-LocaleSelect__flag--pt {
+  background-image: url('/flags/pt.svg');
+}
+
+.c-LocaleSelect__flag--um {
+  background-image: url('/flags/um.svg');
+}
+
+.c-LocaleSelect__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

@@ -1,0 +1,10 @@
+/* Minimal black & white card */
+.ui-Card {
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: var(--ui-space-medium);
+}
+
+

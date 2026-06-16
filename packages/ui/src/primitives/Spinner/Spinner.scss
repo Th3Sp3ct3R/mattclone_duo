@@ -1,0 +1,31 @@
+.ui-Spinner {
+  display: inline-block;
+  border: calc(var(--ui-space-xxsmall) / 2) solid var(--ui-border);
+  border-top-color: var(--ui-fg);
+  border-radius: 50%;
+  animation: ui-spin 0.8s linear infinite;
+}
+
+.ui-Spinner--sm {
+  width: calc(var(--ui-space-small) + (var(--ui-space-xxsmall) / 2));
+  height: calc(var(--ui-space-small) + (var(--ui-space-xxsmall) / 2));
+}
+
+.ui-Spinner--md {
+  width: calc(var(--ui-space-medium) + (var(--ui-space-xxsmall) / 2));
+  height: calc(var(--ui-space-medium) + (var(--ui-space-xxsmall) / 2));
+}
+
+.ui-Spinner--lg {
+  width: var(--ui-space-large);
+  height: var(--ui-space-large);
+  border-width: calc(var(--ui-space-xxsmall) * 0.75);
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+

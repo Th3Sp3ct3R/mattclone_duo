@@ -1,0 +1,27 @@
+.ui-FormErrorSummary {
+  border: 1px solid color-mix(in srgb, var(--ui-error) 30%, transparent);
+  background: color-mix(in srgb, var(--ui-error) 12%, transparent);
+  color: var(--ui-error);
+  border-radius: var(--ui-radius);
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.ui-FormErrorSummary__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.ui-FormErrorSummary__list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.ui-FormErrorSummary__item {
+  font-size: 0.9rem;
+}
+
+

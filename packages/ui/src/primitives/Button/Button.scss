@@ -1,0 +1,194 @@
+/* Button variants + states */
+.ui-Button {
+  --ui-button-bg: var(--ui-primary);
+  --ui-button-border: var(--ui-primary);
+  --ui-button-fg: var(--ui-primary-contrast);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-primary) 88%, var(--ui-fg));
+  --ui-button-hover-border: color-mix(in srgb, var(--ui-primary) 88%, var(--ui-fg));
+  --ui-button-hover-fg: var(--ui-primary-contrast);
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-primary) 78%, var(--ui-fg));
+  --ui-button-active-border: color-mix(in srgb, var(--ui-primary) 78%, var(--ui-fg));
+  --ui-button-active-fg: var(--ui-primary-contrast);
+  --ui-button-padding-y: calc(var(--ui-space-small) - (var(--ui-space-xxsmall) / 2));
+  --ui-button-padding-x: calc(var(--ui-space-small) + (var(--ui-space-xxsmall) / 2));
+
+  font-family: var(--ui-font);
+  background: var(--ui-button-bg);
+  color: var(--ui-button-fg);
+  border: 1px solid var(--ui-button-border);
+  border-radius: var(--ui-radius);
+  padding: var(--ui-button-padding-y) var(--ui-button-padding-x);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-xsmall);
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease, box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.ui-Button:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-Button:not(:disabled):not([data-disabled]):hover {
+  background: var(--ui-button-hover-bg);
+  color: var(--ui-button-hover-fg);
+  border-color: var(--ui-button-hover-border);
+}
+
+.ui-Button:not(:disabled):not([data-disabled]):active {
+  background: var(--ui-button-active-bg);
+  color: var(--ui-button-active-fg);
+  border-color: var(--ui-button-active-border);
+  transform: translateY(1px);
+}
+
+.ui-Button:disabled,
+.ui-Button[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.ui-Button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-Button__label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ui-Button--block {
+  width: 100%;
+}
+
+.ui-Button--iconOnly {
+  --ui-button-padding-y: calc(var(--ui-space-small) - (var(--ui-space-xxsmall) / 2));
+  --ui-button-padding-x: calc(var(--ui-space-small) - (var(--ui-space-xxsmall) / 2));
+}
+
+.ui-Button--primary {
+  --ui-button-bg: var(--ui-primary);
+  --ui-button-border: var(--ui-primary);
+  --ui-button-fg: var(--ui-primary-contrast);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-primary) 88%, var(--ui-fg));
+  --ui-button-hover-border: color-mix(in srgb, var(--ui-primary) 88%, var(--ui-fg));
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-primary) 78%, var(--ui-fg));
+  --ui-button-active-border: color-mix(in srgb, var(--ui-primary) 78%, var(--ui-fg));
+}
+
+.ui-Button--secondary {
+  --ui-button-bg: var(--ui-bg);
+  --ui-button-border: var(--ui-border-strong);
+  --ui-button-fg: var(--ui-fg);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-fg) 5%, var(--ui-bg));
+  --ui-button-hover-border: var(--ui-fg);
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-fg) 10%, var(--ui-bg));
+  --ui-button-active-border: var(--ui-fg);
+}
+
+.ui-Button--outline {
+  --ui-button-bg: transparent;
+  --ui-button-border: var(--ui-border-strong);
+  --ui-button-fg: var(--ui-fg);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-fg) 6%, transparent);
+  --ui-button-hover-border: var(--ui-fg);
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-fg) 10%, transparent);
+  --ui-button-active-border: var(--ui-fg);
+}
+
+.ui-Button--ghost {
+  --ui-button-bg: transparent;
+  --ui-button-border: transparent;
+  --ui-button-fg: var(--ui-fg);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-fg) 6%, transparent);
+  --ui-button-hover-border: transparent;
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-fg) 10%, transparent);
+  --ui-button-active-border: transparent;
+}
+
+.ui-Button--icon {
+  --ui-button-bg: transparent;
+  --ui-button-border: transparent;
+  --ui-button-fg: var(--ui-fg);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-fg) 8%, transparent);
+  --ui-button-hover-border: transparent;
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-fg) 12%, transparent);
+  --ui-button-active-border: transparent;
+  --ui-button-padding-y: calc(var(--ui-space-small) - (var(--ui-space-xxsmall) / 2));
+  --ui-button-padding-x: calc(var(--ui-space-small) - (var(--ui-space-xxsmall) / 2));
+}
+
+.ui-Button--subtle {
+  --ui-button-bg: var(--ui-input);
+  --ui-button-border: var(--ui-border);
+  --ui-button-fg: var(--ui-fg);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-fg) 6%, var(--ui-input));
+  --ui-button-hover-border: var(--ui-border-strong);
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-fg) 10%, var(--ui-input));
+  --ui-button-active-border: var(--ui-border-strong);
+}
+
+.ui-Button--danger {
+  --ui-button-bg: var(--ui-error);
+  --ui-button-border: var(--ui-error);
+  --ui-button-fg: var(--ui-primary-contrast);
+  --ui-button-hover-bg: color-mix(in srgb, var(--ui-error) 88%, var(--ui-fg));
+  --ui-button-hover-border: color-mix(in srgb, var(--ui-error) 88%, var(--ui-fg));
+  --ui-button-active-bg: color-mix(in srgb, var(--ui-error) 78%, var(--ui-fg));
+  --ui-button-active-border: color-mix(in srgb, var(--ui-error) 78%, var(--ui-fg));
+}
+
+.ui-Button--link {
+  --ui-button-bg: transparent;
+  --ui-button-border: transparent;
+  --ui-button-fg: var(--ui-fg);
+  --ui-button-hover-bg: transparent;
+  --ui-button-hover-border: transparent;
+  --ui-button-active-bg: transparent;
+  --ui-button-active-border: transparent;
+  --ui-button-padding-y: 0;
+  --ui-button-padding-x: 0;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: var(--ui-space-xxsmall);
+}
+
+.ui-Button--link:not(:disabled):not([data-disabled]):hover {
+  text-decoration: none;
+}
+
+.ui-Button--loading {
+  pointer-events: none;
+}
+
+.ui-Button__loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xsmall);
+}
+
+.ui-Button--sm {
+  --ui-button-padding-y: var(--ui-space-xsmall);
+  --ui-button-padding-x: calc(var(--ui-space-small) - (var(--ui-space-xxsmall) / 2));
+  font-size: 0.9rem;
+}
+
+.ui-Button--md {
+  font-size: 1rem;
+}
+
+.ui-Button--lg {
+  --ui-button-padding-y: var(--ui-space-small);
+  --ui-button-padding-x: var(--ui-space-medium);
+  font-size: 1.05rem;
+}
+
+

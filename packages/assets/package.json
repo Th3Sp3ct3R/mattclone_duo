@@ -1,0 +1,23 @@
+{
+  "name": "@julio/assets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./config/env": "./src/config/env.js"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "build": "node -e \"console.log('assets: no build step')\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
+    "@julio/config": "0.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0"
+  }
+}

@@ -1,0 +1,35 @@
+/* Minimal checkbox */
+.ui-CheckboxRoot {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border-strong);
+  background: var(--ui-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-CheckboxRoot:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-CheckboxIndicator {
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ui-fg);
+}
+
+/* Best-effort checked styling (Base UI usually sets data-state) */
+.ui-CheckboxRoot[data-state='checked'] {
+  background: var(--ui-fg);
+  border-color: var(--ui-fg);
+}
+
+.ui-CheckboxRoot[data-state='checked'] .ui-CheckboxIndicator {
+  color: var(--ui-bg);
+}
+
+

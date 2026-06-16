@@ -1,0 +1,28 @@
+/* Minimal black & white avatar */
+.ui-AvatarRoot {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+}
+
+.ui-AvatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ui-AvatarFallback {
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+

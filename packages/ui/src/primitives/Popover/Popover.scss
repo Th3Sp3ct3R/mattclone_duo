@@ -1,0 +1,21 @@
+/* Minimal popover */
+.ui-PopoverPopup {
+  padding: 12px;
+}
+
+.ui-PopoverTitle {
+  font-family: var(--ui-font);
+  font-weight: 700;
+}
+
+.ui-PopoverDescription {
+  margin-top: 6px;
+  color: var(--ui-muted);
+}
+
+.ui-PopoverClose {
+  margin-top: 12px;
+  display: inline-flex;
+}
+
+

@@ -1,0 +1,40 @@
+.c-SectionBand {
+  padding: var(--ui-space-xxxlarge) 0;
+}
+
+.c-SectionBand--dark {
+  background: var(--ui-dark-bg);
+  color: var(--ui-dark-fg);
+  --ui-fg: var(--ui-dark-fg);
+  --ui-bg: var(--ui-dark-bg);
+  --ui-muted: var(--ui-dark-muted);
+  --ui-border: var(--ui-dark-border);
+  --ui-border-strong: var(--ui-dark-border-strong);
+}
+
+.c-SectionBand--dark :where(.Kicker) {
+  color: var(--ui-muted);
+}
+
+.c-SectionBand--dark a {
+  color: inherit;
+}
+
+.c-SectionBand--light {
+  background: var(--ui-light-bg);
+  color: var(--ui-light-fg);
+  --ui-fg: var(--ui-light-fg);
+  --ui-bg: var(--ui-light-bg);
+  --ui-muted: var(--ui-light-muted);
+  --ui-border: var(--ui-light-border);
+  --ui-border-strong: var(--ui-light-border-strong);
+}
+
+.c-SectionBand--light :where(.Kicker) {
+  color: var(--ui-muted);
+}
+
+.c-SectionBand--light a {
+  color: inherit;
+}
+

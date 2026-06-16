@@ -1,0 +1,29 @@
+/* PageLayout */
+.c-PageLayout {
+  display: flex;
+  gap: var(--ui-space-medium);
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.c-PageLayout__sidebar {
+  flex: 0 0 240px;
+}
+
+.c-PageLayout__main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 640px) {
+  .c-PageLayout {
+    flex-direction: column;
+  }
+
+  .c-PageLayout__sidebar {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+}
+
+

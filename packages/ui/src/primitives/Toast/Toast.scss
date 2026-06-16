@@ -1,0 +1,46 @@
+/* Minimal toast */
+.ui-ToastViewport {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  z-index: 50;
+}
+
+.ui-ToastRoot {
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.ui-ToastTitle {
+  font-family: var(--ui-font);
+  font-weight: 700;
+}
+
+.ui-ToastDescription {
+  color: var(--ui-muted);
+}
+
+.ui-ToastClose {
+  justify-self: start;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.ui-ToastClose:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+

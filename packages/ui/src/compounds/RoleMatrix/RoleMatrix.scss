@@ -1,0 +1,46 @@
+.c-RoleMatrix {
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.c-RoleMatrix__header,
+.c-RoleMatrix__row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(auto-fit, minmax(80px, 1fr));
+  gap: var(--ui-space-small);
+  align-items: center;
+}
+
+.c-RoleMatrix__header {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ui-muted);
+}
+
+.c-RoleMatrix__body {
+  display: grid;
+  gap: var(--ui-space-xsmall);
+}
+
+.c-RoleMatrix__cell {
+  padding: var(--ui-space-xsmall) var(--ui-space-small);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  text-align: center;
+  background: var(--ui-bg);
+}
+
+.c-RoleMatrix__cell--label {
+  text-align: left;
+}
+
+.c-RoleMatrix__label {
+  font-weight: 600;
+}
+
+.c-RoleMatrix__description {
+  color: var(--ui-muted);
+  font-size: 12px;
+  margin-top: var(--ui-space-xxsmall);
+}
+

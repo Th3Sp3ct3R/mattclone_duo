@@ -1,0 +1,23 @@
+/* Minimal collapsible */
+.ui-CollapsibleTrigger {
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.ui-CollapsibleTrigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-CollapsiblePanel {
+  margin-top: 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: 12px;
+  color: var(--ui-muted);
+}
+
+

@@ -1,0 +1,29 @@
+/* Minimal radio */
+.ui-RadioRoot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border-strong);
+  background: var(--ui-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-RadioRoot:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-RadioIndicator {
+  font-family: var(--ui-font);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ui-fg);
+}
+
+.ui-RadioRoot[data-state='checked'] {
+  border-color: var(--ui-fg);
+}
+
+

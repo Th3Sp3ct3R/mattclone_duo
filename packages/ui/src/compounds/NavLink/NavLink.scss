@@ -1,0 +1,28 @@
+/* NavLink */
+.c-NavLink {
+  padding: 8px 10px;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-fg);
+  border: 1px solid transparent;
+}
+
+.c-NavLink:hover {
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--ui-border);
+}
+
+.c-NavLink.is-active {
+  background: var(--ui-fg);
+  color: var(--ui-bg);
+  border-color: var(--ui-fg);
+}
+
+.c-NavLink:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+
+
+

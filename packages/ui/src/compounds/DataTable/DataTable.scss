@@ -1,0 +1,84 @@
+.c-DataTable {
+  display: grid;
+  gap: var(--ui-space-medium);
+}
+
+.c-DataTable__tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+}
+
+.c-DataTable__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.c-DataTable__table th,
+.c-DataTable__table td {
+  text-align: left;
+  padding: var(--ui-space-small) var(--ui-space-medium);
+  border-bottom: 1px solid var(--ui-border);
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.c-DataTable__table thead th {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.c-DataTable__headerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xsmall);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+}
+
+.c-DataTable__headerButton.is-sortable {
+  cursor: pointer;
+}
+
+.c-DataTable__sort {
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.c-DataTable__empty {
+  text-align: center;
+  color: var(--ui-muted);
+  padding: var(--ui-space-large);
+}
+
+.c-DataTable__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-small);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.c-DataTable__summary {
+  color: var(--ui-muted);
+  font-size: 13px;
+}
+
+.c-DataTable__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-small);
+  align-items: center;
+}
+
+.c-DataTable__pageSize {
+  padding: var(--ui-space-xsmall) var(--ui-space-small);
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+}
+

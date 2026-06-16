@@ -1,0 +1,41 @@
+/* Minimal accordion */
+.ui-AccordionRoot {
+  display: grid;
+  gap: 8px;
+}
+
+.ui-AccordionItem {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  overflow: hidden;
+}
+
+.ui-AccordionHeader {
+  padding: 0;
+  margin: 0;
+}
+
+.ui-AccordionTrigger {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+}
+
+.ui-AccordionTrigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+.ui-AccordionPanel {
+  padding: 10px 12px;
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-muted);
+}
+
+

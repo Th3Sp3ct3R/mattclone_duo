@@ -1,0 +1,15 @@
+{
+  "name": "@julio/logger",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "build": "node -e \"console.log('logger: no build step')\""
+  }
+}
+

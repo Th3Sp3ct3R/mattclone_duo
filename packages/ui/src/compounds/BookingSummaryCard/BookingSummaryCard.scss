@@ -1,0 +1,18 @@
+.c-BookingSummaryCard {
+  display: grid;
+  gap: var(--ui-space-small);
+}
+
+.c-BookingSummaryCard__title {
+  font-weight: 600;
+}
+
+.c-BookingSummaryCard__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-small);
+  color: var(--ui-muted);
+  font-size: 14px;
+}
+

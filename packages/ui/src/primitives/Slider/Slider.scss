@@ -1,0 +1,39 @@
+/* Minimal slider */
+.ui-SliderRoot {
+  font-family: var(--ui-font);
+}
+
+.ui-SliderControl {
+  position: relative;
+  width: 260px;
+  max-width: 100%;
+  padding: 8px 0;
+}
+
+.ui-SliderTrack {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  overflow: hidden;
+}
+
+.ui-SliderIndicator {
+  height: 100%;
+  background: var(--ui-fg);
+}
+
+.ui-SliderThumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-fg);
+  background: var(--ui-bg);
+}
+
+.ui-SliderThumb:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-ring);
+}
+
+
