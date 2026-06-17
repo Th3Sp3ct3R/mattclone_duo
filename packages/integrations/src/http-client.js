@@ -23,7 +23,8 @@ export class IntegrationHttpClient {
       body: body ? JSON.stringify(body) : undefined
     });
     const text = await response.text();
-    const data = text ? JSON.parse(text) : {};
+    const contentType = response.headers?.get?.('content-type') || '';
+    const data = parseIntegrationResponse(text, { contentType, status: response.status, url: response.url });
     if (!response.ok) {
       const error = new Error(data?.message || 'Integration request failed');
       error.status = response.status;
@@ -31,5 +32,37 @@ export class IntegrationHttpClient {
       throw error;
     }
     return data;
+  }
+}
+
+function parseIntegrationResponse(text = '', { contentType = '', status = 0, url = '' } = {}) {
+  const rawText = String(text || '');
+  const trimmed = rawText.trim();
+  if (!trimmed) return {};
+
+  const looksLikeJson = contentType.toLowerCase().includes('json') || /^[{[]/.test(trimmed);
+  if (!looksLikeJson) {
+    const error = new Error('Integration request returned non-JSON response');
+    error.status = status;
+    error.details = {
+      contentType,
+      url,
+      bodySnippet: trimmed.slice(0, 240)
+    };
+    throw error;
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch (cause) {
+    const error = new Error('Integration request returned invalid JSON');
+    error.status = status;
+    error.cause = cause;
+    error.details = {
+      contentType,
+      url,
+      bodySnippet: trimmed.slice(0, 240)
+    };
+    throw error;
   }
 }

@@ -31,6 +31,7 @@
     "seed:blog": "node ./scripts/seed-blog.mjs",
     "seed:engine": "node ./scripts/seed-engine.mjs",
     "seed:all": "node ./scripts/seed-all.mjs",
+    "migrate:legacy": "node ./scripts/migrate-legacy.mjs",
     "patch:blog:longform": "node ./scripts/patch-blog-longform.mjs"
   },
   "dependencies": {
@@ -40,8 +41,8 @@
     "@julio/chatbot": "0.1.0",
     "@julio/config": "0.1.0",
     "@julio/device-control": "0.1.0",
-    "@julio/intelligence": "0.1.0",
     "@julio/integrations": "0.1.0",
+    "@julio/intelligence": "0.1.0",
     "@julio/logger": "0.1.0",
     "@julio/media": "0.1.0",
     "@julio/payments": "0.1.0",
@@ -55,10 +56,11 @@
     "graphql": "^16.8.1",
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
     "mongoose": "^8.7.0",
+    "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.14"
+    "nodemailer": "^6.9.14",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "eslint": "^9.17.0"

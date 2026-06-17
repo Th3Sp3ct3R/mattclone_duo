@@ -5,6 +5,34 @@ function shellEscape(value) {
   return String(value || '').replace(/'/g, "'\\''");
 }
 
+function shellQuote(value) {
+  return `'${String(value || '').replace(/'/g, "'\\''")}'`;
+}
+
+function sleepCommand(ms = 0) {
+  const seconds = Math.max(0, Number(ms || 0) / 1000);
+  return `sleep ${seconds.toFixed(3)}`;
+}
+
+function amStartSucceeded(output = '') {
+  const text = String(output || '').toLowerCase();
+  if (!text.trim()) return false;
+  if (text.includes('error:') || text.includes('exception') || text.includes('does not exist')) return false;
+  return text.includes('status: ok') || text.includes('complete');
+}
+
+function resolveComponentFromOutput(output = '', packageName = '') {
+  const lines = String(output || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return (
+    lines
+      .reverse()
+      .find((line) => line.includes('/') && (!packageName || line.startsWith(`${packageName}/`))) || ''
+  );
+}
+
 function ok(response) {
   return response?.code === 0 || response?.code === 200 || response?.code === undefined;
 }
@@ -31,7 +59,7 @@ export class VmosDirectController {
     return Promise.resolve(true);
   }
 
-  async shell(command) {
+  async shell(command, { timeoutMs = this.shellTimeoutMs } = {}) {
     const response = await this.client.execAdbCommand([this.padCode], command);
     if (!ok(response)) {
       throw new DeviceControlError('VMOS async command failed', {
@@ -47,7 +75,7 @@ export class VmosDirectController {
       });
     }
 
-    const deadline = Date.now() + this.shellTimeoutMs;
+    const deadline = Date.now() + Number(timeoutMs || this.shellTimeoutMs);
     while (Date.now() < deadline) {
       await delay(this.pollIntervalMs);
       const resultResponse = await this.client.getScriptResult([task.taskId]);
@@ -64,7 +92,7 @@ export class VmosDirectController {
 
     throw new DeviceControlError('VMOS shell command timed out', {
       code: 'VMOS_SHELL_TIMEOUT',
-      details: { command, timeoutMs: this.shellTimeoutMs }
+      details: { command, timeoutMs }
     });
   }
 
@@ -99,8 +127,44 @@ export class VmosDirectController {
     return this.inputText(text);
   }
 
-  typeHuman(text) {
-    return this.inputText(text);
+  typeHuman(value, options = {}) {
+    if (Array.isArray(value)) return this.typeSequence(value, options);
+    if (Array.isArray(options.steps)) return this.typeSequence(options.steps, options);
+    return this.inputText(value);
+  }
+
+  gestureSwipe(points = [], { timeoutMs = null } = {}) {
+    if (!Array.isArray(points) || points.length < 2) return Promise.resolve('');
+    const commands = [];
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const start = points[index];
+      const end = points[index + 1];
+      const durationMs = Math.max(16, Math.round(Number(end.durationMs || 40)));
+      commands.push(
+        `input swipe ${Math.round(start.x)} ${Math.round(start.y)} ${Math.round(end.x)} ${Math.round(end.y)} ${durationMs}`
+      );
+      commands.push(sleepCommand(Math.min(durationMs * 0.35, 80)));
+    }
+    const plannedTimeoutMs =
+      timeoutMs ||
+      commands.length * 150 +
+        points.reduce((sum, point) => sum + Number(point.durationMs || 0), 8_000);
+    return this.shell(commands.join('; '), { timeoutMs: plannedTimeoutMs });
+  }
+
+  typeSequence(steps = [], { timeoutMs = null } = {}) {
+    if (!Array.isArray(steps) || !steps.length) return Promise.resolve('');
+    const commands = steps
+      .map((step) => {
+        if (step.type === 'text' && step.value) return `input text ${shellQuote(step.value)}`;
+        if (step.type === 'key' && step.code) return `input keyevent ${Number(step.code)}`;
+        if (step.type === 'sleep') return sleepCommand(step.ms);
+        return '';
+      })
+      .filter(Boolean);
+    if (!commands.length) return Promise.resolve('');
+    const plannedTimeoutMs = timeoutMs || steps.reduce((sum, step) => sum + Number(step.ms || 0), 10_000) + 15_000;
+    return this.shell(commands.join('; '), { timeoutMs: plannedTimeoutMs });
   }
 
   keyevent(keyCode) {
@@ -119,12 +183,47 @@ export class VmosDirectController {
     return this.shell(Array.from({ length: times }, () => 'input keyevent 67').join('; '));
   }
 
-  startApp(packageName, activity = '') {
-    if (activity) {
-      const component = activity.includes('/') ? activity : `${packageName}/${activity}`;
-      return this.shell(`am start -W -n ${component}`);
+  async isAppInstalled(packageName) {
+    const output = await this.shell(`pm path ${shellEscape(packageName)}`).catch(() => '');
+    return String(output || '').includes('package:');
+  }
+
+  async resolveLauncherComponent(packageName) {
+    const output = await this.shell(
+      `cmd package resolve-activity --brief -c android.intent.category.LAUNCHER ${shellEscape(packageName)}`
+    ).catch(() => '');
+    return resolveComponentFromOutput(output, packageName);
+  }
+
+  async waitForForeground(packageName, timeoutMs = 10_000) {
+    const deadline = Date.now() + Number(timeoutMs || 10_000);
+    while (Date.now() < deadline) {
+      const currentPackage = await this.getCurrentPackage();
+      if (currentPackage === packageName) return true;
+      await delay(Math.min(this.pollIntervalMs, 750));
     }
-    return this.client.startApp([this.padCode], packageName);
+    return false;
+  }
+
+  async startApp(packageName, activity = '') {
+    const packageValue = String(packageName || '').trim();
+    if (!packageValue) return false;
+    if (!(await this.isAppInstalled(packageValue))) return false;
+
+    const launchComponents = [];
+    if (activity) {
+      launchComponents.push(activity.includes('/') ? activity : `${packageValue}/${activity}`);
+    }
+    const resolvedComponent = await this.resolveLauncherComponent(packageValue);
+    if (resolvedComponent && !launchComponents.includes(resolvedComponent)) launchComponents.push(resolvedComponent);
+
+    for (const component of launchComponents) {
+      const output = await this.shell(`am start -W -n ${component}`).catch(() => '');
+      if (amStartSucceeded(output) && (await this.waitForForeground(packageValue))) return true;
+    }
+
+    await this.shell(`monkey -p ${shellEscape(packageValue)} -c android.intent.category.LAUNCHER 1`).catch(() => '');
+    return this.waitForForeground(packageValue);
   }
 
   stopApp(packageName) {

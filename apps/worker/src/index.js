@@ -6,6 +6,7 @@ import { startCron, stopCron } from '@julio/api/cron';
 import { logger } from '@julio/api/logger';
 import { startEmailWorker } from './email.worker.js';
 import { startEngineWorkers } from './engine.worker.js';
+import { releaseWorkerLeases } from './handlers/worker-context.js';
 
 async function main() {
   // Keep parity with the old API bootstrap: connect infra + start long-lived jobs.
@@ -36,6 +37,7 @@ async function main() {
   async function shutdown(signal) {
     logger.info(`[worker] shutting down (${signal})`);
     stopCron();
+    await releaseWorkerLeases();
     await disconnectRabbitmq();
     await disconnectRedis();
     await disconnectMongo();

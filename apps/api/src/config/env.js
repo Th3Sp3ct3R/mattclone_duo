@@ -10,6 +10,7 @@ const schema = defineSchema({
   LOG_LEVEL: rules.optionalString('info'),
 
   MONGODB_URI: rules.optionalString(),
+  LEGACY_DATABASE_URL: rules.optionalString(),
   JWT_SECRET: rules.optionalString(),
 
   REDIS_URL: rules.optionalString(),
@@ -117,6 +118,7 @@ export const env = {
   logLevel: cfg.LOG_LEVEL,
 
   mongodbUri: cfg.MONGODB_URI,
+  legacyDatabaseUrl: cfg.LEGACY_DATABASE_URL,
   jwtSecret: cfg.JWT_SECRET,
 
   redisUrl: cfg.REDIS_URL,

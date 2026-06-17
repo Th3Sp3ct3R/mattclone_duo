@@ -7,7 +7,7 @@ loadRootEnv();
 
 const { createApiApp } = await import('@julio/api/app');
 
-const port = Number(process.env.PORT || 5173);
+const port = Number(process.env.PORT || 4000);
 const isDev = process.env.NODE_ENV !== 'production';
 const app = next({ dev: isDev, port });
 const handle = app.getRequestHandler();

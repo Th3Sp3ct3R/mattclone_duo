@@ -33,8 +33,14 @@ export {
 export {
   claimMongoLease,
   renewMongoLease,
-  releaseMongoLease
+  releaseMongoLease,
+  releaseLeasesByOwner
 } from './mongo-lease.js';
+
+export {
+  buildDeviceEventChannel,
+  recordDeviceEvent
+} from './device-events.js';
 
 export {
   dotProduct,

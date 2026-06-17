@@ -12,6 +12,7 @@
     "build": "node -e \"console.log('automation: no build step')\""
   },
   "dependencies": {
-    "@julio/device-control": "0.1.0"
+    "@julio/device-control": "0.1.0",
+    "@julio/humanizer": "0.1.0"
   }
 }

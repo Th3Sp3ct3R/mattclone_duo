@@ -1,5 +1,3 @@
-export { humanDelayMs, jitterPoint, createSeededPersonality } from './humanize.js';
-export { AutomationFlow, PlatformPostingFlow } from './posting-flow.js';
 export {
   TIKTOK_PACKAGE,
   TIKTOK_LAUNCHER_ACTIVITY,
@@ -7,7 +5,9 @@ export {
   TIKTOK_TASK_STATUS,
   TIKTOK_DISMISS_TEXTS
 } from './tiktok/constants.js';
+export { createHumanActor } from './human-actor.js';
 export { publishTikTokVideo, warmupTikTokAccount, waitForFileTask, waitForTikTokTask } from './tiktok/vmos-tasks.js';
+export { publishTikTokVideoUi } from './tiktok/publish.js';
 export { checkTikTokLoginState, loginTikTok, setupTikTokProfile } from './tiktok/ui-flows.js';
 export {
   INSTAGRAM_PACKAGE,

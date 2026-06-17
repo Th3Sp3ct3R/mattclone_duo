@@ -2,6 +2,12 @@ import { VmosClient } from './vmos-client.js';
 import { VmosDirectController } from './vmos-direct-controller.js';
 import { DeviceControlError } from './errors.js';
 
+function listFromInstanceResponse(result = {}) {
+  const data = result.data || result;
+  if (Array.isArray(data)) return data;
+  return data.list || data.records || data.rows || data.items || [];
+}
+
 export class VmosCloudPhoneProvider {
   constructor({ client }) {
     if (!client) throw new DeviceControlError('VMOS client is required', { code: 'PROVIDER_CONFIG' });
@@ -11,6 +17,18 @@ export class VmosCloudPhoneProvider {
 
   listDevices() {
     return this.client.listDevices();
+  }
+
+  async describeInstance(providerDeviceId) {
+    const result = await this.client.listInstances({ padCodes: [providerDeviceId] });
+    const instances = listFromInstanceResponse(result);
+    return (
+      instances.find(
+        (instance) =>
+          String(instance.padCode || instance.pad_code || instance.providerDeviceId || instance.deviceCode || '') ===
+          String(providerDeviceId)
+      ) || null
+    );
   }
 
   async startDevice(providerDeviceId) {

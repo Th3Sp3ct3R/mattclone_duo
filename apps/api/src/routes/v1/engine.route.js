@@ -4,12 +4,20 @@ import {
   createDevice,
   enqueueDeviceAction,
   listDevices,
+  syncDevices,
   updateDevice
 } from '@julio/api/controllers/engine-devices';
 import {
+  listDeviceEvents,
+  streamDeviceEvents
+} from '@julio/api/controllers/engine-device-events';
+import {
+  assignDevice,
   createAccount,
   enqueueAccountAction,
+  enqueueAccountOnboarding,
   listAccounts,
+  unassignDevice,
   updateAccount
 } from '@julio/api/controllers/engine-accounts';
 import {
@@ -69,12 +77,18 @@ export function createEngineRouter() {
 
   router.get('/devices', listDevices);
   router.post('/devices', createDevice);
+  router.post('/devices/sync', syncDevices);
   router.put('/devices/:id', updateDevice);
+  router.get('/devices/:id/events', listDeviceEvents);
+  router.get('/devices/:id/events/stream', streamDeviceEvents);
   router.post('/devices/:id/actions/:action', enqueueDeviceAction);
 
   router.get('/accounts', listAccounts);
   router.post('/accounts', createAccount);
   router.put('/accounts/:id', updateAccount);
+  router.post('/accounts/:id/assign-device', assignDevice);
+  router.post('/accounts/:id/unassign-device', unassignDevice);
+  router.post('/accounts/:id/onboard', enqueueAccountOnboarding);
   router.post('/accounts/:id/actions/:action', enqueueAccountAction);
 
   router.get('/posts', listPosts);

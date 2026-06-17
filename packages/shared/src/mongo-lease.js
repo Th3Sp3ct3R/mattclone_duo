@@ -80,3 +80,19 @@ export async function releaseMongoLease(
     { new: true }
   );
 }
+
+export async function releaseLeasesByOwner(
+  model,
+  { owner, leaseUntilField = 'leasedUntil', leaseOwnerField = 'leasedBy' } = {}
+) {
+  if (!model?.updateMany) throw new Error('A Mongoose model is required');
+  const leaseOwner = normalizeLeaseOwner(owner);
+
+  return model.updateMany(
+    { [leaseOwnerField]: leaseOwner },
+    {
+      $set: { [leaseUntilField]: null },
+      $unset: { [leaseOwnerField]: '' }
+    }
+  );
+}

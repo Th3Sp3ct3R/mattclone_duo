@@ -1,6 +1,8 @@
 import { env } from '@julio/api/config/env';
 import { connectMongo } from '@julio/api/db/mongo';
 import { EngineAccount } from '@julio/api/models/engine-account';
+import { EngineDevice } from '@julio/api/models/engine-device';
+import { enqueueAccountOnboarding as enqueueAccountOnboardingWorkflow } from '@julio/api/services/account-onboarding';
 import { dispatchEngineJob } from '@julio/api/services/job-dispatch';
 import { logger } from '@julio/api/logger';
 import { requireAdmin } from '@julio/api/utils/auth';
@@ -77,6 +79,46 @@ export async function updateAccount(req, res) {
   }
 }
 
+export async function assignDevice(req, res) {
+  try {
+    requireAdmin(req);
+    await ensureDb();
+    const deviceId = req.body?.deviceId || req.body?.assignedDeviceId;
+    if (!deviceId) return res.status(400).json({ code: 'BAD_REQUEST', message: 'deviceId is required' });
+
+    const device = await EngineDevice.findOne({ _id: deviceId, retiredAt: null }).select('_id').lean();
+    if (!device) return res.status(404).json({ code: 'NOT_FOUND', message: 'Device not found' });
+
+    const account = await EngineAccount.findByIdAndUpdate(
+      req.params.id,
+      { $set: { assignedDeviceId: device._id } },
+      { new: true }
+    );
+    if (!account) return res.status(404).json({ code: 'NOT_FOUND', message: 'Account not found' });
+    return res.json({ ok: true, account });
+  } catch (err) {
+    logger.error('Engine account device assignment failed', err);
+    return sendError(res, err, 'Internal error');
+  }
+}
+
+export async function unassignDevice(req, res) {
+  try {
+    requireAdmin(req);
+    await ensureDb();
+    const account = await EngineAccount.findByIdAndUpdate(
+      req.params.id,
+      { $set: { assignedDeviceId: null } },
+      { new: true }
+    );
+    if (!account) return res.status(404).json({ code: 'NOT_FOUND', message: 'Account not found' });
+    return res.json({ ok: true, account });
+  } catch (err) {
+    logger.error('Engine account device unassignment failed', err);
+    return sendError(res, err, 'Internal error');
+  }
+}
+
 export async function enqueueAccountAction(req, res) {
   try {
     requireAdmin(req);
@@ -102,6 +144,23 @@ export async function enqueueAccountAction(req, res) {
     return res.json({ ok: true, jobRun });
   } catch (err) {
     logger.error('Engine account action enqueue failed', err);
+    return sendError(res, err, 'Internal error');
+  }
+}
+
+export async function enqueueAccountOnboarding(req, res) {
+  try {
+    requireAdmin(req);
+    await ensureDb();
+    const result = await enqueueAccountOnboardingWorkflow({
+      accountId: req.params.id,
+      warmup: Boolean(req.body?.warmup),
+      post: req.body?.post || null,
+      onboardingKey: req.body?.onboardingKey || req.body?.idempotencyKey || ''
+    });
+    return res.json(result);
+  } catch (err) {
+    logger.error('Engine account onboarding enqueue failed', err);
     return sendError(res, err, 'Internal error');
   }
 }

@@ -476,9 +476,22 @@ export const api = {
       const res = await http().post('/v1/engine/devices', payload);
       return res.data;
     },
+    async syncDevices() {
+      const res = await http().post('/v1/engine/devices/sync');
+      return res.data;
+    },
     async enqueueDeviceAction(deviceId, action) {
       const res = await http().post(`/v1/engine/devices/${deviceId}/actions/${action}`);
       return res.data;
+    },
+    async getDeviceEvents(deviceId, params = {}) {
+      const query = new URLSearchParams(params).toString();
+      const res = await http().get(`/v1/engine/devices/${deviceId}/events${query ? `?${query}` : ''}`);
+      return res.data;
+    },
+    deviceEventsStreamUrl(deviceId, params = {}) {
+      const query = new URLSearchParams(params).toString();
+      return `${resolveApiBaseUrl()}/v1/engine/devices/${deviceId}/events/stream${query ? `?${query}` : ''}`;
     },
     async getAccounts(params = {}) {
       const query = new URLSearchParams(params).toString();
@@ -489,8 +502,20 @@ export const api = {
       const res = await http().post('/v1/engine/accounts', payload);
       return res.data;
     },
+    async assignDevice(accountId, deviceId) {
+      const res = await http().post(`/v1/engine/accounts/${accountId}/assign-device`, { deviceId });
+      return res.data;
+    },
+    async unassignDevice(accountId) {
+      const res = await http().post(`/v1/engine/accounts/${accountId}/unassign-device`);
+      return res.data;
+    },
     async enqueueAccountAction(accountId, action) {
       const res = await http().post(`/v1/engine/accounts/${accountId}/actions/${action}`);
+      return res.data;
+    },
+    async enqueueAccountOnboarding(accountId, payload = {}) {
+      const res = await http().post(`/v1/engine/accounts/${accountId}/onboard`, payload);
       return res.data;
     },
     async getPosts(params = {}) {

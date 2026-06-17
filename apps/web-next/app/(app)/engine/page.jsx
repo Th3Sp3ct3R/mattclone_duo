@@ -8,7 +8,11 @@ import { notifications } from '@/src/notifications/client.js';
 
 import { EngineFinanceProxyPanel } from '@/app/(app)/engine/components/EngineFinanceProxyPanel.jsx';
 import { EngineIntelligencePanel } from '@/app/(app)/engine/components/EngineIntelligencePanel.jsx';
-import { EngineOperationsPanel, initialPostForm } from '@/app/(app)/engine/components/EngineOperationsPanel.jsx';
+import {
+  EngineOperationsPanel,
+  initialAccountForm,
+  initialPostForm
+} from '@/app/(app)/engine/components/EngineOperationsPanel.jsx';
 import { EngineStatGrid } from '@/app/(app)/engine/components/EngineStatGrid.jsx';
 
 const emptySummary = { devices: 0, accounts: 0, activePosts: 0, proxies: 0 };
@@ -35,6 +39,7 @@ export default function EnginePage() {
   const [djekxaOrders, setDjekxaOrders] = useState([]);
   const [djekxaBalance, setDjekxaBalance] = useState(null);
   const [actionKey, setActionKey] = useState('');
+  const [accountForm, setAccountForm] = useState(initialAccountForm);
   const [postForm, setPostForm] = useState(initialPostForm);
   const [scrapeForm, setScrapeForm] = useState(initialScrapeForm);
   const [trendForm, setTrendForm] = useState(initialTrendForm);
@@ -118,11 +123,11 @@ export default function EnginePage() {
     };
   }, []);
 
-  async function runAction(key, action) {
+  async function runAction(key, action, successTitle = 'Engine job queued') {
     setActionKey(key);
     try {
       await action();
-      notifications.notify({ title: 'Engine job queued', message: key });
+      notifications.notify({ title: successTitle, message: key });
       await loadEngine({ showSpinner: false });
     } catch (err) {
       notifications.notify({ title: 'Engine action failed', message: err?.message || 'Request failed' });
@@ -145,6 +150,56 @@ export default function EnginePage() {
     );
   }
 
+  async function syncDevices() {
+    await runAction('devices:sync', () => api.engine.syncDevices(), 'VMOS devices synced');
+  }
+
+  async function createAccount(event) {
+    event.preventDefault();
+    await runAction(
+      'account:create',
+      async () => {
+        await api.engine.createAccount({
+          platform: accountForm.platform,
+          username: accountForm.username,
+          password: accountForm.password,
+          email: accountForm.email,
+          displayName: accountForm.displayName,
+          bio: accountForm.bio,
+          avatarUrl: accountForm.avatarUrl,
+          nicheKey: accountForm.nicheKey,
+          assignedDeviceId: accountForm.deviceId === 'none' ? null : accountForm.deviceId
+        });
+        setAccountForm(initialAccountForm);
+      },
+      'Account created'
+    );
+  }
+
+  async function assignAccountDevice(account, deviceId) {
+    await runAction(
+      `account:${account._id}:assign`,
+      () => api.engine.assignDevice(account._id, deviceId),
+      'Device assigned'
+    );
+  }
+
+  async function unassignAccountDevice(account) {
+    await runAction(
+      `account:${account._id}:assign`,
+      () => api.engine.unassignDevice(account._id),
+      'Device unassigned'
+    );
+  }
+
+  async function onboardAccount(account, payload) {
+    await runAction(
+      `account:${account._id}:onboard`,
+      () => api.engine.enqueueAccountOnboarding(account._id, payload),
+      'Onboarding queued'
+    );
+  }
+
   async function createPost(event) {
     event.preventDefault();
     const hashtags = postForm.hashtags
@@ -154,8 +209,8 @@ export default function EnginePage() {
     await runAction('post:create', async () => {
       await api.engine.createPost({
         platform: postForm.platform,
-        accountId: postForm.accountId,
-        deviceId: postForm.deviceId || null,
+        accountId: postForm.accountId === 'none' ? '' : postForm.accountId,
+        deviceId: postForm.deviceId === 'none' ? null : postForm.deviceId,
         sourceUrl: postForm.sourceUrl,
         caption: postForm.caption,
         hashtags
@@ -194,7 +249,24 @@ export default function EnginePage() {
       {error ? <div className="Error">{error}</div> : null}
 
       <EngineStatGrid summary={summary} loading={loading} />
-      <EngineOperationsPanel devices={devices} accounts={accounts} posts={posts} jobRuns={jobRuns} postForm={postForm} setPostForm={setPostForm} actionKey={actionKey} actionButton={actionButton} createPost={createPost} />
+      <EngineOperationsPanel
+        devices={devices}
+        accounts={accounts}
+        posts={posts}
+        jobRuns={jobRuns}
+        postForm={postForm}
+        setPostForm={setPostForm}
+        accountForm={accountForm}
+        setAccountForm={setAccountForm}
+        actionKey={actionKey}
+        actionButton={actionButton}
+        createAccount={createAccount}
+        createPost={createPost}
+        syncDevices={syncDevices}
+        assignAccountDevice={assignAccountDevice}
+        unassignAccountDevice={unassignAccountDevice}
+        onboardAccount={onboardAccount}
+      />
       <EngineIntelligencePanel contentItems={contentItems} sourceMedia={sourceMedia} clips={clips} socialScores={socialScores} trends={trends} trendMatches={trendMatches} actionKey={actionKey} runAction={runAction} scrapeForm={enrichedScrapeForm} setScrapeForm={setScrapeForm} trendForm={enrichedTrendForm} setTrendForm={setTrendForm} />
       <EngineFinanceProxyPanel proxies={enrichedProxies} expenses={expenses} djekxaOrders={djekxaOrders} djekxaBalance={djekxaBalance} orderForm={enrichedOrderForm} setOrderForm={setOrderForm} actionKey={actionKey} runAction={runAction} />
     </div>

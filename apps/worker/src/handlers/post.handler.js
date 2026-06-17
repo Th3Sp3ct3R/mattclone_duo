@@ -1,13 +1,14 @@
 import { EngineAccount } from '@julio/api/models/engine-account';
 import { EnginePost } from '@julio/api/models/engine-post';
-import { publishInstagramReel, publishTikTokVideo } from '@julio/automation';
+import { publishInstagramReel, publishTikTokVideoUi } from '@julio/automation';
 import { stageMediaForDevice } from '@julio/media';
 
 import { runEngineJob } from '../engine-job-runner.js';
-import { getProvider, withDeviceLease } from './worker-context.js';
+import { emitDeviceEvent } from '../device-event-emitter.js';
+import { assertDeviceReachable, buildHumanContext, getProvider, withDeviceLease } from './worker-context.js';
 
 export async function handlePostJob(payload) {
-  return runEngineJob(payload, async ({ jobName, targetId }) => {
+  return runEngineJob(payload, async ({ jobName, targetId }, jobRun) => {
     const post = await EnginePost.findById(targetId);
     if (!post) throw new Error('Post not found');
     if (jobName === 'cancel') {
@@ -22,7 +23,33 @@ export async function handlePostJob(payload) {
 
     return withDeviceLease(deviceId, async (device) => {
       const provider = getProvider();
+      const event = (message, data = {}) =>
+        emitDeviceEvent({
+          deviceId: device._id,
+          source: 'post',
+          jobRunId: jobRun._id,
+          jobName,
+          message,
+          data: { postId: String(post._id), accountId: String(account._id), platform: post.platform, ...data }
+        });
+      await assertDeviceReachable(provider, device, (message, data = {}) =>
+        emitDeviceEvent({
+          deviceId: device._id,
+          level: 'error',
+          source: 'post',
+          jobRunId: jobRun._id,
+          jobName,
+          message,
+          data: { postId: String(post._id), accountId: String(account._id), platform: post.platform, ...data }
+        })
+      );
       const controller = provider.createDirectController(device.providerDeviceId);
+      const { actor } = await buildHumanContext({
+        controller,
+        accountId: account._id,
+        deviceId: device._id
+      });
+      await event('staging media for publish');
       const stagedMedia = await stageMediaForDevice(post.media || {});
 
       await EnginePost.findByIdAndUpdate(post._id, {
@@ -37,8 +64,10 @@ export async function handlePostJob(payload) {
         deviceId: device._id,
         failure: {}
       });
+      await event('media staged for publish', { publicUrl: stagedMedia.publicUrl });
 
       const publishOptions = post.publishOptions || {};
+      await event('publishing post started', { soundQuery: publishOptions.soundQuery || '' });
       const result =
         post.platform === 'instagram'
           ? await publishInstagramReel(controller, {
@@ -46,16 +75,21 @@ export async function handlePostJob(payload) {
               caption: publishOptions.caption,
               hashtags: publishOptions.hashtags || []
             })
-          : await publishTikTokVideo({
-              client: provider.client,
-              padCode: device.providerDeviceId,
+          : await publishTikTokVideoUi(
+            controller,
+            {
               videoUrl: stagedMedia.publicUrl,
               caption: publishOptions.caption,
               hashtags: publishOptions.hashtags || [],
-              coverTime: publishOptions.coverFrameIndex || 0,
-              musicId: publishOptions.soundQuery || '',
-              taskName: `julio-post-${post._id}-${Date.now()}`
-            });
+              coverFrameIndex: publishOptions.coverFrameIndex,
+              soundQuery: publishOptions.soundQuery || '',
+              privacy: publishOptions.privacy || ''
+            },
+            {
+              actor,
+              onEvent: (message, data = {}) => event(message, data)
+            }
+          );
 
       await EnginePost.findByIdAndUpdate(post._id, {
         status: result.success === false ? 'failed' : 'posted',
@@ -66,6 +100,10 @@ export async function handlePostJob(payload) {
           result.success === false
             ? { code: 'PUBLISH_FAILED', message: result.reason || 'Publish failed', failedAt: new Date() }
             : {}
+      });
+      await event(result.success === false ? 'post publish failed' : 'post published', {
+        status: result.status || '',
+        reason: result.reason || ''
       });
       return result;
     });

@@ -15,7 +15,8 @@ import {
 import { EmailCodeFetcher } from '@julio/integrations';
 
 import { runEngineJob } from '../engine-job-runner.js';
-import { getProvider, withDeviceLease } from './worker-context.js';
+import { emitDeviceEvent } from '../device-event-emitter.js';
+import { assertDeviceReachable, buildHumanContext, getProvider, withDeviceLease } from './worker-context.js';
 
 const INSTAGRAM_CHALLENGE_MARKERS = [
   'check your email',
@@ -26,6 +27,12 @@ const INSTAGRAM_CHALLENGE_MARKERS = [
   'confirm it',
   'challenge required'
 ];
+const PERSISTABLE_FAILURE_STATUSES = new Set(['checkpointed', 'banned', 'cooldown', 'retired']);
+
+function accountStatusForResult(result = {}) {
+  if (result.success || result.status === 'active') return 'active';
+  return PERSISTABLE_FAILURE_STATUSES.has(result.status) ? result.status : 'checkpointed';
+}
 
 function getAccountEmailFetcher(account) {
   const email = account?.credentials?.email;
@@ -49,17 +56,44 @@ async function detectInstagramChallenge(controller) {
 }
 
 export async function handleAccountJob(payload) {
-  return runEngineJob(payload, async ({ jobName, targetId }) => {
+  return runEngineJob(payload, async ({ jobName, targetId }, jobRun) => {
     const account = await EngineAccount.findById(targetId);
     if (!account) throw new Error('Account not found');
     const device = await resolveAccountDevice(account);
 
     return withDeviceLease(device._id, async (leasedDevice) => {
       const provider = getProvider();
+      const event = (message, data = {}, level = 'info') =>
+        emitDeviceEvent({
+          deviceId: leasedDevice._id,
+          level,
+          source: 'account',
+          jobRunId: jobRun._id,
+          jobName,
+          message,
+          data: { accountId: String(account._id), platform: account.platform, ...data }
+        });
+      await assertDeviceReachable(provider, leasedDevice, (message, data = {}) =>
+        emitDeviceEvent({
+          deviceId: leasedDevice._id,
+          level: 'error',
+          source: 'account',
+          jobRunId: jobRun._id,
+          jobName,
+          message,
+          data: { accountId: String(account._id), platform: account.platform, ...data }
+        })
+      );
       const controller = provider.createDirectController(leasedDevice.providerDeviceId);
+      const { actor } = await buildHumanContext({
+        controller,
+        accountId: account._id,
+        deviceId: leasedDevice._id
+      });
       const emailCodeFetcher = getAccountEmailFetcher(account);
       const credentials = {
         username: account.credentials?.username,
+        email: account.credentials?.email,
         password: account.credentials?.password,
         emailCodeFetcher
       };
@@ -71,13 +105,25 @@ export async function handleAccountJob(payload) {
 
       let result;
       if (jobName === 'login') {
-        result = account.platform === 'instagram' ? await loginInstagram(controller, credentials) : await loginTikTok(controller, credentials);
+        await event('account login started');
+        result =
+          account.platform === 'instagram'
+            ? await loginInstagram(controller, credentials)
+            : await loginTikTok(controller, credentials, { actor });
+        if (result?.status === 'missing_credentials') {
+          await event('account login skipped: missing credentials', { reason: result.reason || '' }, 'error');
+        }
+        if (result?.reason === 'tiktok_launch_failed') {
+          await event('tiktok failed to launch / foreground', { reason: result.reason }, 'error');
+        }
       } else if (jobName === 'profile-setup') {
+        await event('account profile setup started');
         result =
           account.platform === 'instagram'
             ? await setupInstagramProfile(controller, account.profile || {})
-            : await setupTikTokProfile(controller, account.profile || {});
+            : await setupTikTokProfile(controller, account.profile || {}, { actor });
       } else if (jobName === 'warmup') {
+        await event('account warmup started');
         result =
           account.platform === 'instagram'
             ? await warmupInstagramAccount(controller, account.health?.warmupConfig || {})
@@ -87,10 +133,11 @@ export async function handleAccountJob(payload) {
                 ...(account.health?.warmupConfig || {})
               });
       } else {
+        await event('account health check started');
         const state =
           account.platform === 'instagram'
             ? await checkInstagramLoginState(controller)
-            : await checkTikTokLoginState(controller);
+            : await checkTikTokLoginState(controller, { actor });
         const challenge =
           account.platform === 'instagram' && state !== 'logged_in'
             ? await detectInstagramChallenge(controller)
@@ -102,10 +149,12 @@ export async function handleAccountJob(payload) {
           reason: challenge.marker || ''
         };
       }
+      await event('account action completed', { status: result.status || '', success: result.success !== false });
 
-      const active = result.success || result.status === 'active';
+      const accountStatus = accountStatusForResult(result);
+      const active = accountStatus === 'active';
       await EngineAccount.findByIdAndUpdate(account._id, {
-        status: active ? 'active' : result.status || 'checkpointed',
+        status: accountStatus,
         session: {
           ...(account.session?.toObject?.() || account.session || {}),
           lastLoginDeviceId: leasedDevice._id,
@@ -116,7 +165,7 @@ export async function handleAccountJob(payload) {
         'health.lastFailureReason': active ? '' : result.reason || '',
         'health.consecutiveFailures': active ? 0 : Number(account.health?.consecutiveFailures || 0) + 1
       });
-      if (jobName === 'health-check' && !active && result.status === 'cooldown') {
+      if (jobName === 'health-check' && !active && accountStatus === 'cooldown') {
         await dispatchEngineJob({
           queueName: 'engine.account',
           jobName: 'login',
