@@ -68,6 +68,9 @@ export async function seedEngine({ disconnect = true } = {}) {
   await clearEngineCollections();
 
   const deviceRefs = await seedDevices();
+  // DuoPlus devices are no longer seeded as demo rows — they come from the real
+  // provider via `yarn workspace @julio/api sync:duoplus`. Seeding demo duoplus
+  // rows would duplicate/clash with the real synced fleet.
   const proxyRefs = await seedProxies(deviceRefs);
   const accountRefs = await seedAccounts({ ...deviceRefs, ...proxyRefs });
   const contentRefs = await seedContent();
@@ -77,6 +80,7 @@ export async function seedEngine({ disconnect = true } = {}) {
 
   const summary = {
     devices: deviceRefs.devices.length,
+    duoplusDevices: 0,
     proxies: proxyRefs.proxies.length,
     accounts: accountRefs.accounts.length,
     niches: contentRefs.niches.length,

@@ -42,9 +42,9 @@ engineProxySchema.index({ 'endpoint.host': 1, 'endpoint.port': 1 }, { unique: tr
 
 const proxyAssignmentSchema = new mongoose.Schema(
   {
-    proxyId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineProxy', required: true, index: true },
-    deviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineDevice', default: null, index: true },
-    accountId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineAccount', default: null, index: true },
+    proxyId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineProxy', required: true },
+    deviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineDevice', default: null },
+    accountId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineAccount', default: null },
     assignedAt: { type: Date, default: Date.now },
     deactivatedAt: { type: Date, default: null, index: true },
     reason: { type: String, trim: true, default: '' }
@@ -52,8 +52,30 @@ const proxyAssignmentSchema = new mongoose.Schema(
   { collection: 'engine_proxy_assignments', timestamps: true }
 );
 
-proxyAssignmentSchema.index({ proxyId: 1, deactivatedAt: 1 });
-proxyAssignmentSchema.index({ deviceId: 1, deactivatedAt: 1 });
+proxyAssignmentSchema.index(
+  { proxyId: 1 },
+  {
+    name: 'active_proxy_assignment_unique',
+    unique: true,
+    partialFilterExpression: { deactivatedAt: null }
+  }
+);
+proxyAssignmentSchema.index(
+  { deviceId: 1 },
+  {
+    name: 'active_device_proxy_assignment_unique',
+    unique: true,
+    partialFilterExpression: { deviceId: { $type: 'objectId' }, deactivatedAt: null }
+  }
+);
+proxyAssignmentSchema.index(
+  { accountId: 1 },
+  {
+    name: 'active_account_proxy_assignment_unique',
+    unique: true,
+    partialFilterExpression: { accountId: { $type: 'objectId' }, deactivatedAt: null }
+  }
+);
 
 export const EngineProxy =
   mongoose.models.EngineProxy || mongoose.model('EngineProxy', engineProxySchema);

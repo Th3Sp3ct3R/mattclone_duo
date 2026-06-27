@@ -91,3 +91,10 @@ pnpm-lock.yaml
 
 
 
+
+# Captured browser sessions (contain live tokens)
+*-session.json
+suno-session-persist.json
+
+# Local artifacts
+output/

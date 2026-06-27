@@ -15,7 +15,17 @@ async function getProxyForDevice(deviceId) {
   return EngineProxy.findById(assignment.proxyId);
 }
 
-async function provisionApps({ provider, device, controller }) {
+// DuoPlus: install from the DuoPlus-hosted app catalog (/app/platformList -> /app/install).
+// No APK hosting or ADB push needed.
+async function provisionDuoPlusApps({ provider, device }) {
+  const appNames = env.duoplusAppSet || [];
+  if (!appNames.length) return { provider: 'duoplus', appNames: [], installed: [], missing: [] };
+  const result = await provider.provisionApps(device.providerDeviceId, { appNames });
+  return { provider: 'duoplus', appNames, ...result };
+}
+
+// VMOS: push APK by URL + auto-install.
+async function provisionVmosApps({ provider, device, controller }) {
   const reports = [];
   const apps = [
     { platform: 'tiktok', packageName: TIKTOK_PACKAGE, apkUrl: env.apkUrls.tiktok },
@@ -35,13 +45,18 @@ async function provisionApps({ provider, device, controller }) {
     });
     reports.push({ platform: app.platform, installed: false, taskId: upload.data?.taskId || '' });
   }
-  return reports;
+  return { provider: 'vmos', apps: reports };
+}
+
+function provisionApps({ provider, device, controller }) {
+  if (device.provider === 'duoplus') return provisionDuoPlusApps({ provider, device });
+  return provisionVmosApps({ provider, device, controller });
 }
 
 export async function handleDeviceJob(payload) {
   return runEngineJob(payload, async ({ jobName, targetId }, jobRun) =>
     withDeviceLease(targetId, async (device) => {
-      const provider = getProvider();
+      const provider = getProvider(device.provider);
       const now = new Date();
       const event = (message, data = {}) =>
         emitDeviceEvent({ deviceId: device._id, source: 'device', jobRunId: jobRun._id, jobName, message, data });

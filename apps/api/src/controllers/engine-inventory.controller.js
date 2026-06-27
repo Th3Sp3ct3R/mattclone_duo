@@ -8,6 +8,8 @@ import { dispatchEngineJob } from '@julio/api/services/job-dispatch';
 import { logger } from '@julio/api/logger';
 import { requireAdmin } from '@julio/api/utils/auth';
 import { sendError } from '@julio/api/utils/response';
+import { findActiveProxyAssignmentConflict } from '@julio/api/utils/proxy-assignment';
+import { publicProxy } from '@julio/api/utils/proxy-public';
 import { verifyProxy } from '@julio/integrations';
 
 async function ensureDb() {
@@ -20,7 +22,7 @@ export async function listProxies(req, res) {
     requireAdmin(req);
     await ensureDb();
     const proxies = await EngineProxy.find({}).sort({ updatedAt: -1 }).lean();
-    return res.json({ ok: true, proxies });
+    return res.json({ ok: true, proxies: proxies.map(publicProxy) });
   } catch (err) {
     logger.error('Engine proxies fetch failed', err);
     return sendError(res, err, 'Internal error');
@@ -56,13 +58,52 @@ export async function assignProxy(req, res) {
   try {
     requireAdmin(req);
     await ensureDb();
-    const assignment = await EngineProxyAssignment.create({
-      proxyId: req.params.id,
-      deviceId: req.body?.deviceId || null,
-      accountId: req.body?.accountId || null,
-      reason: String(req.body?.reason || '').trim()
+    const proxy = await EngineProxy.findById(req.params.id);
+    if (!proxy) return res.status(404).json({ code: 'NOT_FOUND', message: 'Proxy not found' });
+
+    const deviceId = req.body?.deviceId || null;
+    const accountId = req.body?.accountId || null;
+    if (!deviceId && !accountId) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'deviceId or accountId is required' });
+    }
+
+    const activeFilter = { deactivatedAt: null };
+    const conflicts = await EngineProxyAssignment.find({
+      $or: [
+        { proxyId: proxy._id, ...activeFilter },
+        ...(deviceId ? [{ deviceId, ...activeFilter }] : []),
+        ...(accountId ? [{ accountId, ...activeFilter }] : [])
+      ]
+    }).lean();
+    const conflict = findActiveProxyAssignmentConflict(conflicts, {
+      proxyId: proxy._id,
+      deviceId,
+      accountId
     });
-    await EngineProxy.findByIdAndUpdate(req.params.id, { status: 'assigned' });
+    if (conflict) {
+      return res.status(409).json({
+        code: 'PROXY_ASSIGNMENT_CONFLICT',
+        message: 'Proxy, device, or account already has an active assignment'
+      });
+    }
+
+    const assignment = await EngineProxyAssignment.findOneAndUpdate(
+      { proxyId: proxy._id, deviceId, accountId, deactivatedAt: null },
+      {
+        $setOnInsert: {
+          proxyId: proxy._id,
+          deviceId,
+          accountId,
+          assignedAt: new Date()
+        },
+        $set: { reason: String(req.body?.reason || '').trim() }
+      },
+      { new: true, upsert: true }
+    );
+    await Promise.all([
+      EngineProxy.findByIdAndUpdate(proxy._id, { status: 'assigned' }),
+      accountId ? EngineAccount.findByIdAndUpdate(accountId, { lastSeenProxyId: proxy._id }) : Promise.resolve()
+    ]);
     return res.json({ ok: true, assignment });
   } catch (err) {
     logger.error('Engine proxy assign failed', err);

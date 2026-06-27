@@ -8,6 +8,7 @@
     ".": "./src/index.js"
   },
   "scripts": {
+    "test": "jest -c jest.config.js",
     "lint": "eslint .",
     "build": "node -e \"console.log('device-control: no build step')\""
   }

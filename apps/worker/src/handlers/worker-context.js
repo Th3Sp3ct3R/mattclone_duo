@@ -22,9 +22,17 @@ export class DeviceUnavailableError extends Error {
   }
 }
 
-export function getProvider() {
+export function getProvider(type = env.cloudProvider || 'vmos') {
+  if (type === 'duoplus') {
+    return createCloudPhoneProvider({
+      type: 'duoplus',
+      apiKey: env.duoplusApiKey,
+      baseUrl: env.duoplusApiBaseUrl,
+      minDelayMs: env.duoplusMinDelayMs
+    });
+  }
   return createCloudPhoneProvider({
-    type: env.cloudProvider || 'vmos',
+    type: 'vmos',
     accessKey: env.vmosAccessKey,
     secretKey: env.vmosSecretKey,
     baseUrl: env.vmosApiBaseUrl
