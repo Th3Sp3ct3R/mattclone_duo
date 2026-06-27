@@ -476,12 +476,32 @@ export const api = {
       const res = await http().post('/v1/engine/devices', payload);
       return res.data;
     },
-    async syncDevices() {
-      const res = await http().post('/v1/engine/devices/sync');
+    async syncDevices(provider = 'vmos') {
+      const res = await http().post('/v1/engine/devices/sync', { provider });
       return res.data;
     },
     async enqueueDeviceAction(deviceId, action) {
       const res = await http().post(`/v1/engine/devices/${deviceId}/actions/${action}`);
+      return res.data;
+    },
+    async getDeviceStatus(deviceId) {
+      const res = await http().get(`/v1/engine/devices/${deviceId}/status`);
+      return res.data;
+    },
+    async getDeviceFocus(deviceId, quality = {}) {
+      const query = new URLSearchParams(
+        Object.entries(quality).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      ).toString();
+      const res = await http().get(`/v1/engine/devices/${deviceId}/focus${query ? `?${query}` : ''}`);
+      return res.data;
+    },
+    async initDuoPlusProxy(deviceId, payload) {
+      const res = await http().post(`/v1/engine/devices/${deviceId}/proxy/init`, payload);
+      return res.data;
+    },
+    async getDuoPlusFrames(ids = []) {
+      const query = ids.length ? `?ids=${encodeURIComponent(ids.join(','))}` : '';
+      const res = await http().get(`/v1/engine/duoplus/frames${query}`);
       return res.data;
     },
     async getDeviceEvents(deviceId, params = {}) {
@@ -631,5 +651,3 @@ export const api = {
     }
   }
 };
-
-

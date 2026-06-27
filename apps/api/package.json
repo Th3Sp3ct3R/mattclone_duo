@@ -31,6 +31,9 @@
     "seed:blog": "node ./scripts/seed-blog.mjs",
     "seed:engine": "node ./scripts/seed-engine.mjs",
     "seed:all": "node ./scripts/seed-all.mjs",
+    "sync:duoplus": "node ./scripts/sync-duoplus.mjs",
+    "capture:session": "node ./scripts/capture-session.mjs",
+    "frames:duoplus": "node ./scripts/duoplus-frames.mjs",
     "migrate:legacy": "node ./scripts/migrate-legacy.mjs",
     "patch:blog:longform": "node ./scripts/patch-blog-longform.mjs"
   },
