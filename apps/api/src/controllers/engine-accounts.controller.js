@@ -5,6 +5,7 @@ import { EngineDevice } from '@julio/api/models/engine-device';
 import { enqueueAccountOnboarding as enqueueAccountOnboardingWorkflow } from '@julio/api/services/account-onboarding';
 import { dispatchEngineJob } from '@julio/api/services/job-dispatch';
 import { logger } from '@julio/api/logger';
+import { findAccountDevicePlatformConflict } from '@julio/api/utils/account-device-platform';
 import { canDeviceAcceptAccount } from '@julio/api/utils/device-account-eligibility';
 import { requireAdmin } from '@julio/api/utils/auth';
 import { sendError } from '@julio/api/utils/response';
@@ -34,6 +35,26 @@ function sanitizeAccount(payload = {}) {
     assignedDeviceId: payload.assignedDeviceId || null,
     tags: Array.isArray(payload.tags) ? payload.tags.map(String).filter(Boolean) : []
   };
+}
+
+async function findAssignedPlatformConflict({ platform, assignedDeviceId, accountId = null }) {
+  if (!platform || !assignedDeviceId) return null;
+  const accounts = await EngineAccount.find({
+    platform,
+    assignedDeviceId,
+    retiredAt: null
+  })
+    .select('_id platform assignedDeviceId retiredAt credentials.username')
+    .lean();
+  return findAccountDevicePlatformConflict(accounts, { platform, assignedDeviceId, accountId });
+}
+
+function accountPlatformConflictResponse(res, conflict, platform) {
+  const username = conflict?.credentials?.username || 'another account';
+  return res.status(409).json({
+    code: 'DEVICE_PLATFORM_ACCOUNT_EXISTS',
+    message: `Device already has ${username} assigned for ${platform}; unassign it before assigning another ${platform} account.`
+  });
 }
 
 export async function listAccounts(req, res) {
@@ -67,6 +88,11 @@ export async function createAccount(req, res) {
         return res.status(eligibility.status).json({ code: eligibility.code, message: eligibility.message });
       }
       payload.assignedDeviceId = device._id;
+      const conflict = await findAssignedPlatformConflict({
+        platform: payload.platform,
+        assignedDeviceId: device._id
+      });
+      if (conflict) return accountPlatformConflictResponse(res, conflict, payload.platform);
     }
     const account = await EngineAccount.create(payload);
     return res.json({ ok: true, account });
@@ -106,6 +132,14 @@ export async function assignDevice(req, res) {
     if (!eligibility.ok) {
       return res.status(eligibility.status).json({ code: eligibility.code, message: eligibility.message });
     }
+    const existingAccount = await EngineAccount.findById(req.params.id).select('_id platform').lean();
+    if (!existingAccount) return res.status(404).json({ code: 'NOT_FOUND', message: 'Account not found' });
+    const conflict = await findAssignedPlatformConflict({
+      platform: existingAccount.platform,
+      assignedDeviceId: device._id,
+      accountId: existingAccount._id
+    });
+    if (conflict) return accountPlatformConflictResponse(res, conflict, existingAccount.platform);
 
     const account = await EngineAccount.findByIdAndUpdate(
       req.params.id,
