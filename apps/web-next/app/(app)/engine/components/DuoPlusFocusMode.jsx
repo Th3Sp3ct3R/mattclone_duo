@@ -61,12 +61,27 @@ function proxyLabel(device) {
   return device.providerMeta?.proxyIp || device.providerMeta?.ip || 'configured';
 }
 
+function idOf(value) {
+  return value?._id ? String(value._id) : value ? String(value) : '';
+}
+
+function checkpointLabel(reason = '') {
+  return String(reason || '')
+    .split('_')
+    .filter(Boolean)
+    .join(' ');
+}
+
 // Build the tiles. Prefer real DuoPlus devices; fall back to mock fleet for the demo.
-function buildFocusTiles(devices) {
+function buildFocusTiles(devices, accounts = []) {
   const real = (devices || []).filter((d) => d.provider === 'duoplus' && !d.retiredAt);
   const source = real.length ? real : MOCK_FOCUS_DEVICES;
   return source.map((device) => {
     const status = device.status || 'unknown';
+    const checkpointed = (accounts || []).filter(
+      (account) => account.status === 'checkpointed' && idOf(account.assignedDeviceId) === idOf(device._id)
+    );
+    const checkpointReason = checkpointed.map((account) => checkpointLabel(account.checkpointReason)).find(Boolean);
     return {
       device,
       id: String(device._id),
@@ -82,17 +97,19 @@ function buildFocusTiles(devices) {
       adbAddress: device.runtime?.adbAddress || '',
       screenshotUrl: device.runtime?.lastScreenshotUrl || '',
       mockApp: device.__mockApp || '',
+      checkpointReason,
+      checkpointCount: checkpointed.length,
       isMock: !real.length
     };
   });
 }
 
-export function DuoPlusFocusMode({ devices, onFocus, onRefreshStatus, onCapture, onPoll, fetchFrames, actionKey }) {
+export function DuoPlusFocusMode({ devices, accounts, onFocus, onRefreshStatus, onCapture, onPoll, fetchFrames, actionKey }) {
   const [runningOnly, setRunningOnly] = useState(true);
   const [live, setLive] = useState(true);
   const [frames, setFrames] = useState({}); // providerDeviceId -> data URL (from batchCapture2)
   const [frameSource, setFrameSource] = useState(''); // 'live' | 'no-session' | 'expired'
-  const tiles = useMemo(() => buildFocusTiles(devices), [devices]);
+  const tiles = useMemo(() => buildFocusTiles(devices, accounts), [devices, accounts]);
   const runningCount = tiles.filter((tile) => tile.status === 'running').length;
   const demoMode = tiles.some((tile) => tile.isMock);
   const visible = runningOnly ? tiles.filter((tile) => tile.status === 'running') : tiles;
@@ -244,6 +261,11 @@ function FocusPhone({ tile, liveFrame, actionKey, onFocus, onRefreshStatus, onCa
           <span className="FocusChip">
             {tile.activeAccounts}/{tile.maxAccounts} acct
           </span>
+          {tile.checkpointCount ? (
+            <span className="FocusChip FocusChip--missing">
+              {tile.checkpointReason || 'manual intervention'}
+            </span>
+          ) : null}
         </div>
         <div className="FocusPhone__actions">
           <Button

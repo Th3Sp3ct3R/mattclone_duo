@@ -69,7 +69,7 @@ const routingRuleSchema = new mongoose.Schema(
     name: { type: String, trim: true, required: true },
     active: { type: Boolean, default: true, index: true },
     sourcePlatform: { type: String, trim: true, default: '' },
-    targetPlatform: { type: String, enum: ['tiktok', 'instagram'], required: true },
+    targetPlatform: { type: String, enum: ['tiktok', 'instagram', 'youtube'], required: true },
     nicheKey: { type: String, trim: true, default: '' },
     accountSelector: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
     schedulePolicy: { type: mongoose.Schema.Types.Mixed, default: () => ({}) }

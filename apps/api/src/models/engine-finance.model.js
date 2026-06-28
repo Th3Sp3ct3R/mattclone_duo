@@ -19,7 +19,7 @@ const expenseSchema = new mongoose.Schema(
 const djekxaOrderSchema = new mongoose.Schema(
   {
     externalOrderId: { type: String, trim: true, required: true },
-    platform: { type: String, enum: ['tiktok', 'instagram'], required: true, index: true },
+    platform: { type: String, enum: ['tiktok', 'instagram', 'youtube'], required: true, index: true },
     status: { type: String, trim: true, default: 'created', index: true },
     username: { type: String, trim: true, default: '' },
     password: { type: String, trim: true, default: '' },

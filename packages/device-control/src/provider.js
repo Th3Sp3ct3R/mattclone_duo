@@ -16,6 +16,14 @@ function asAppIdArray(value) {
     .filter(Boolean);
 }
 
+function installedPackageSet(response = {}) {
+  return new Set(
+    listFromDuoPlusResponse(response)
+      .map((app) => String(app.packageName || app.package || app.package_name || app.pkg || app.bundle_id || '').trim())
+      .filter(Boolean)
+  );
+}
+
 export class VmosCloudPhoneProvider {
   constructor({ client }) {
     if (!client) throw new DeviceControlError('VMOS client is required', { code: 'PROVIDER_CONFIG' });
@@ -126,17 +134,26 @@ export class DuoplusCloudPhoneProvider {
   async provisionApps(providerDeviceId, { appNames = [], appIds = [] } = {}) {
     const targetIds = [...asAppIdArray(appIds)];
     let missing = [];
+    let matched = [];
     if (appNames.length) {
       const catalog = listFromDuoPlusResponse(await this.client.listPlatformApps({ pagesize: 100 }));
-      const { matched, missing: notFound } = resolveDuoPlusAppIds(catalog, appNames);
+      const { matched: matchedApps, missing: notFound } = resolveDuoPlusAppIds(catalog, appNames);
+      matched = matchedApps;
       missing = notFound;
       for (const app of matched) if (!targetIds.includes(app.appId)) targetIds.push(app.appId);
     }
+    const installedPackages = installedPackageSet(await this.client.listInstalledApps(providerDeviceId).catch(() => ({})));
+    const matchedById = new Map(matched.map((app) => [app.appId, app]));
     const installed = [];
     for (const appId of targetIds) {
+      const app = matchedById.get(appId);
+      if (app?.packageName && installedPackages.has(app.packageName)) {
+        installed.push({ appId, packageName: app.packageName, ok: true, skipped: true });
+        continue;
+      }
       // sequential to respect the 1 QPS-per-endpoint limit
       const result = await this.client.installApp([providerDeviceId], appId);
-      installed.push({ appId, ok: result?.code === 200 || result?.code === undefined });
+      installed.push({ appId, packageName: app?.packageName || '', ok: result?.code === 200 || result?.code === undefined });
     }
     return { installed, missing };
   }

@@ -3,11 +3,11 @@ import * as Yup from 'yup';
 import { validationKeys } from '../keys.js';
 
 const platformSchema = Yup.string()
-  .oneOf(['tiktok', 'instagram'], validationKeys.common.oneOf)
+  .oneOf(['tiktok', 'instagram', 'youtube'], validationKeys.common.oneOf)
   .required(validationKeys.common.required);
 
 export const engineDeviceSchema = Yup.object({
-  provider: Yup.string().oneOf(['vmos'], validationKeys.common.oneOf).required(validationKeys.common.required),
+  provider: Yup.string().oneOf(['vmos', 'duoplus'], validationKeys.common.oneOf).required(validationKeys.common.required),
   providerDeviceId: Yup.string().required(validationKeys.common.required),
   name: Yup.string().required(validationKeys.common.required),
   region: Yup.string(),
@@ -31,6 +31,7 @@ export const engineAccountSchema = Yup.object({
 
 export const enginePostSchema = Yup.object({
   platform: platformSchema,
+  postType: Yup.string().oneOf(['', 'reel', 'video', 'short'], validationKeys.common.oneOf),
   accountId: Yup.string().required(validationKeys.common.required),
   deviceId: Yup.string().nullable(),
   sourceUrl: Yup.string().url(validationKeys.common.url).required(validationKeys.common.required),

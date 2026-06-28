@@ -35,7 +35,8 @@ const deviceProviderMetaSchema = new mongoose.Schema(
     expiredAt: { type: String, trim: true, default: '' },
     subscriptionVerified: { type: Boolean, default: false },
     subscriptionStatus: { type: String, trim: true, default: '' },
-    subscriptionExpiresAt: { type: String, trim: true, default: '' }
+    subscriptionExpiresAt: { type: String, trim: true, default: '' },
+    installedApps: { type: mongoose.Schema.Types.Mixed, default: () => ({}) }
   },
   { _id: false }
 );

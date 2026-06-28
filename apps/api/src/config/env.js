@@ -54,7 +54,7 @@ const schema = defineSchema({
   DUOPLUS_API_BASE_URL: rules.optionalString('https://openapi.duoplus.net'),
   DUOPLUS_MIN_DELAY_MS: rules.optionalNumber(1100),
   DUOPLUS_FOCUS_STREAM_ENABLED: rules.optionalString('false'),
-  DUOPLUS_APP_SET: rules.optionalString('TikTok,Instagram'),
+  DUOPLUS_APP_SET: rules.optionalString('TikTok,Instagram,YouTube'),
   DUOPLUS_SESSION_FILE: rules.optionalString('./duoplus-session.json'),
 
   ENGINE_PUBLIC_URL: rules.optionalString(),

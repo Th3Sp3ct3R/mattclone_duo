@@ -6,7 +6,8 @@ import { EngineSelect } from './EngineSelect.jsx';
 
 const platformOptions = [
   { value: 'tiktok', label: 'TikTok' },
-  { value: 'instagram', label: 'Instagram' }
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'youtube', label: 'YouTube' }
 ];
 
 export function AccountCreateForm({ accountForm, setAccountForm, deviceOptions, actionKey, createAccount }) {

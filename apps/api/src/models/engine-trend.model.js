@@ -11,7 +11,7 @@ const embeddingSchema = new mongoose.Schema(
 
 const engineTrendSchema = new mongoose.Schema(
   {
-    platform: { type: String, enum: ['tiktok', 'instagram'], required: true, index: true },
+    platform: { type: String, enum: ['tiktok', 'instagram', 'youtube'], required: true, index: true },
     nicheKey: { type: String, trim: true, default: '', index: true },
     title: { type: String, trim: true, default: '' },
     description: { type: String, trim: true, default: '' },

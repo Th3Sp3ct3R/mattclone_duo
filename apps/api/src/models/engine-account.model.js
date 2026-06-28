@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const PLATFORMS = ['tiktok', 'instagram'];
+const PLATFORMS = ['tiktok', 'instagram', 'youtube'];
 const ACCOUNT_STATUSES = [
   'new',
   'logging_in',
@@ -57,10 +57,22 @@ const sessionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const CHECKPOINT_REASONS = [
+  '',
+  'two_factor',
+  'captcha',
+  'suspicious_login',
+  'missing_app',
+  'missing_subscription',
+  'missing_proxy',
+  'manual_intervention'
+];
+
 const engineAccountSchema = new mongoose.Schema(
   {
     platform: { type: String, enum: PLATFORMS, required: true, index: true },
     status: { type: String, enum: ACCOUNT_STATUSES, default: 'new', index: true },
+    checkpointReason: { type: String, enum: CHECKPOINT_REASONS, default: '' },
     credentials: { type: credentialsSchema, default: () => ({}) },
     profile: { type: profileSchema, default: () => ({}) },
     assignedDeviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineDevice', default: null, index: true },
@@ -79,3 +91,5 @@ engineAccountSchema.index({ 'profile.nicheKey': 1, platform: 1 });
 
 export const EngineAccount =
   mongoose.models.EngineAccount || mongoose.model('EngineAccount', engineAccountSchema);
+
+export { CHECKPOINT_REASONS, PLATFORMS };

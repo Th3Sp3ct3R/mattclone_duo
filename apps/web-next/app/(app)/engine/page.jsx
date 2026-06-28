@@ -252,6 +252,7 @@ export default function EnginePage() {
     await runAction('post:create', async () => {
       await api.engine.createPost({
         platform: postForm.platform,
+        postType: postForm.platform === 'youtube' ? postForm.postType || 'short' : postForm.postType || '',
         accountId: postForm.accountId === 'none' ? '' : postForm.accountId,
         deviceId: postForm.deviceId === 'none' ? null : postForm.deviceId,
         sourceUrl: postForm.sourceUrl,

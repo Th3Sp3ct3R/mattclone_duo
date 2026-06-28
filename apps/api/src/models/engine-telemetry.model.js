@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const identitySnapshotSchema = new mongoose.Schema(
   {
     deviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineDevice', required: true, index: true },
-    platform: { type: String, enum: ['tiktok', 'instagram'], required: true, index: true },
+    platform: { type: String, enum: ['tiktok', 'instagram', 'youtube'], required: true, index: true },
     observedUsername: { type: String, trim: true, default: '' },
     observedExternalUserId: { type: String, trim: true, default: '' },
     confidence: { type: Number, default: 0 },

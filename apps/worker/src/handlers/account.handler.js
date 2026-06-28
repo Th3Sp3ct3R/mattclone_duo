@@ -2,31 +2,14 @@ import { env } from '@julio/api/config/env';
 import { EngineAccount } from '@julio/api/models/engine-account';
 import { EngineDevice } from '@julio/api/models/engine-device';
 import { dispatchEngineJob } from '@julio/api/services/job-dispatch';
-import {
-  checkInstagramLoginState,
-  checkTikTokLoginState,
-  loginInstagram,
-  loginTikTok,
-  setupInstagramProfile,
-  setupTikTokProfile,
-  warmupInstagramAccount,
-  warmupTikTokAccount
-} from '@julio/automation';
+import { getPlatformAdapter } from '@julio/automation';
 import { EmailCodeFetcher } from '@julio/integrations';
 
 import { runEngineJob } from '../engine-job-runner.js';
 import { emitDeviceEvent } from '../device-event-emitter.js';
 import { assertDeviceReachable, buildHumanContext, getProvider, withDeviceLease } from './worker-context.js';
+import { PreflightError, checkpointReasonForPreflightCode, runJobPreflight } from './preflight.js';
 
-const INSTAGRAM_CHALLENGE_MARKERS = [
-  'check your email',
-  'enter the code',
-  'unusual activity',
-  'suspended',
-  'checkpoint',
-  'confirm it',
-  'challenge required'
-];
 const PERSISTABLE_FAILURE_STATUSES = new Set(['checkpointed', 'banned', 'cooldown', 'retired']);
 
 function accountStatusForResult(result = {}) {
@@ -48,11 +31,28 @@ async function resolveAccountDevice(account) {
   return device;
 }
 
-async function detectInstagramChallenge(controller) {
-  const dump = await controller.getUIDump().catch(() => '');
-  const text = String(dump || '').toLowerCase();
-  const marker = INSTAGRAM_CHALLENGE_MARKERS.find((candidate) => text.includes(candidate));
-  return marker ? { challenged: true, marker } : { challenged: false };
+function checkpointReasonForResult(result = {}) {
+  const reason = String(result.checkpointReason || result.reason || '').toLowerCase();
+  if (!reason) return '';
+  if (reason === 'two_factor' || reason.includes('2-step') || reason.includes('two-factor')) return 'two_factor';
+  if (reason.includes('captcha')) return 'captcha';
+  if (reason === 'suspicious_login' || reason.includes('suspicious') || reason.includes('unusual activity')) {
+    return 'suspicious_login';
+  }
+  if (reason === 'missing_app') return 'missing_app';
+  if (reason === 'missing_subscription') return 'missing_subscription';
+  if (reason === 'missing_proxy') return 'missing_proxy';
+  if (result.status === 'checkpointed') return 'manual_intervention';
+  return '';
+}
+
+async function checkpointAccount(account, reason, message) {
+  await EngineAccount.findByIdAndUpdate(account._id, {
+    status: 'checkpointed',
+    checkpointReason: reason,
+    'health.lastFailureReason': message,
+    'health.consecutiveFailures': Number(account.health?.consecutiveFailures || 0) + 1
+  });
 }
 
 export async function handleAccountJob(payload) {
@@ -84,6 +84,16 @@ export async function handleAccountJob(payload) {
           data: { accountId: String(account._id), platform: account.platform, ...data }
         })
       );
+      try {
+        await runJobPreflight({ provider, device: leasedDevice, account, platform: account.platform });
+      } catch (err) {
+        if (err instanceof PreflightError) {
+          const checkpointReason = checkpointReasonForPreflightCode(err.code);
+          await event('account preflight failed', { code: err.code, reason: checkpointReason }, 'error');
+          await checkpointAccount(account, checkpointReason, err.message);
+        }
+        throw err;
+      }
       const controller = provider.createDirectController(leasedDevice.providerDeviceId);
       const { actor } = await buildHumanContext({
         controller,
@@ -91,70 +101,46 @@ export async function handleAccountJob(payload) {
         deviceId: leasedDevice._id
       });
       const emailCodeFetcher = getAccountEmailFetcher(account);
-      const credentials = {
-        username: account.credentials?.username,
-        email: account.credentials?.email,
-        password: account.credentials?.password,
-        emailCodeFetcher
-      };
+      const adapter = getPlatformAdapter(account.platform);
 
       await EngineAccount.findByIdAndUpdate(account._id, {
         status: jobName === 'login' ? 'logging_in' : account.status,
+        checkpointReason: jobName === 'login' ? '' : account.checkpointReason || '',
         'health.lastLoginCheckAt': new Date()
       });
 
       let result;
       if (jobName === 'login') {
         await event('account login started');
-        result =
-          account.platform === 'instagram'
-            ? await loginInstagram(controller, credentials)
-            : await loginTikTok(controller, credentials, { actor });
+        result = await adapter.login(controller, account, { actor, emailCodeFetcher });
         if (result?.status === 'missing_credentials') {
           await event('account login skipped: missing credentials', { reason: result.reason || '' }, 'error');
         }
-        if (result?.reason === 'tiktok_launch_failed') {
-          await event('tiktok failed to launch / foreground', { reason: result.reason }, 'error');
+        if (String(result?.reason || '').endsWith('_launch_failed')) {
+          await event('platform failed to launch / foreground', { reason: result.reason }, 'error');
         }
       } else if (jobName === 'profile-setup') {
         await event('account profile setup started');
-        result =
-          account.platform === 'instagram'
-            ? await setupInstagramProfile(controller, account.profile || {})
-            : await setupTikTokProfile(controller, account.profile || {}, { actor });
+        result = await adapter.setupProfile(controller, account, { actor });
       } else if (jobName === 'warmup') {
         await event('account warmup started');
-        result =
-          account.platform === 'instagram'
-            ? await warmupInstagramAccount(controller, account.health?.warmupConfig || {})
-            : await warmupTikTokAccount({
-                client: provider.client,
-                padCode: leasedDevice.providerDeviceId,
-                ...(account.health?.warmupConfig || {})
-              });
+        result = await adapter.warmup(controller, account, {
+          actor,
+          provider,
+          providerDeviceId: leasedDevice.providerDeviceId
+        });
       } else {
         await event('account health check started');
-        const state =
-          account.platform === 'instagram'
-            ? await checkInstagramLoginState(controller)
-            : await checkTikTokLoginState(controller, { actor });
-        const challenge =
-          account.platform === 'instagram' && state !== 'logged_in'
-            ? await detectInstagramChallenge(controller)
-            : { challenged: false };
-        result = {
-          success: state === 'logged_in',
-          status: state === 'logged_in' ? 'active' : challenge.challenged ? 'checkpointed' : 'cooldown',
-          state,
-          reason: challenge.marker || ''
-        };
+        result = await adapter.healthCheck(controller, account, { actor });
       }
       await event('account action completed', { status: result.status || '', success: result.success !== false });
 
       const accountStatus = accountStatusForResult(result);
       const active = accountStatus === 'active';
+      const checkpointReason = active ? '' : checkpointReasonForResult({ ...result, status: accountStatus });
       await EngineAccount.findByIdAndUpdate(account._id, {
         status: accountStatus,
+        checkpointReason,
         session: {
           ...(account.session?.toObject?.() || account.session || {}),
           lastLoginDeviceId: leasedDevice._id,

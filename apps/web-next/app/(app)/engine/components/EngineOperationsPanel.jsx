@@ -15,6 +15,7 @@ import { buildLoginFlowRows } from './login-flow-model.js';
 
 const initialPostForm = {
   platform: 'tiktok',
+  postType: '',
   accountId: 'none',
   deviceId: 'none',
   sourceUrl: '',
@@ -36,7 +37,14 @@ const initialAccountForm = {
 
 const platformOptions = [
   { value: 'tiktok', label: 'TikTok' },
-  { value: 'instagram', label: 'Instagram' }
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'youtube', label: 'YouTube' }
+];
+
+const postTypeOptions = [
+  { value: 'short', label: 'Short' },
+  { value: 'video', label: 'Video' },
+  { value: 'reel', label: 'Reel' }
 ];
 
 function statusCell(info) {
@@ -74,6 +82,13 @@ function deviceName(device) {
 
 function accountLabel(account) {
   return [account.credentials?.username, account.platform].filter(Boolean).join(' - ');
+}
+
+function checkpointLabel(reason = '') {
+  return String(reason || '')
+    .split('_')
+    .filter(Boolean)
+    .join(' ');
 }
 
 function formatTimestamp(value) {
@@ -172,7 +187,19 @@ export function EngineOperationsPanel({
     { accessorKey: 'name', header: 'Device' },
     { accessorKey: 'provider', header: 'Provider', cell: providerCell },
     { accessorKey: 'providerDeviceId', header: 'Provider ID' },
-    { accessorKey: 'status', header: 'Status', cell: statusCell },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row, getValue }) => {
+        const reason = checkpointLabel(row.original.checkpointReason);
+        return (
+          <span className="Kicker">
+            {getValue() || 'unknown'}
+            {reason ? ` / ${reason}` : ''}
+          </span>
+        );
+      }
+    },
     { id: 'proxy', header: 'Proxy', cell: proxyCell },
     { accessorKey: 'region', header: 'Region' },
     {
@@ -348,6 +375,7 @@ export function EngineOperationsPanel({
           {focusMode ? (
             <DuoPlusFocusMode
               devices={filteredDevices}
+              accounts={accounts}
               actionKey={actionKey}
               onRefreshStatus={refreshDeviceStatus}
               onCapture={captureDeviceFrame}
@@ -413,10 +441,20 @@ export function EngineOperationsPanel({
             <div className="HomeFeatureGrid">
               <EngineSelect
                 value={postForm.platform}
-                onValueChange={(value) => setPostForm((prev) => ({ ...prev, platform: value }))}
+                onValueChange={(value) =>
+                  setPostForm((prev) => ({ ...prev, platform: value, postType: value === 'youtube' ? 'short' : '' }))
+                }
                 placeholder="Platform"
                 options={platformOptions}
               />
+              {postForm.platform === 'youtube' ? (
+                <EngineSelect
+                  value={postForm.postType || 'short'}
+                  onValueChange={(value) => setPostForm((prev) => ({ ...prev, postType: value }))}
+                  placeholder="Post type"
+                  options={postTypeOptions}
+                />
+              ) : null}
               <EngineSelect
                 value={postForm.accountId}
                 onValueChange={(value) => setPostForm((prev) => ({ ...prev, accountId: value }))}
