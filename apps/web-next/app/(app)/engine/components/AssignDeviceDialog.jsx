@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Button, Card, Dialog } from '@julio/ui';
 
+import { accountDeviceOption } from './device-account-eligibility.js';
 import { EngineSelect } from './EngineSelect.jsx';
 
 function idOf(value) {
@@ -27,7 +28,7 @@ export function AssignDeviceDialog({
   const activeDevices = devices.filter((device) => !device.retiredAt);
   const options = [
     { value: 'none', label: 'Unassigned' },
-    ...activeDevices.map((device) => ({ value: String(device._id), label: deviceLabel(device) }))
+    ...activeDevices.map((device) => accountDeviceOption(device, deviceLabel(device)))
   ];
 
   useEffect(() => {

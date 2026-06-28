@@ -10,6 +10,7 @@ import { DeviceLogsDialog } from './DeviceLogsDialog.jsx';
 import { DuoPlusFocusMode } from './DuoPlusFocusMode.jsx';
 import { EngineSelect } from './EngineSelect.jsx';
 import { OnboardDialog } from './OnboardDialog.jsx';
+import { accountDeviceOption } from './device-account-eligibility.js';
 import { buildLoginFlowRows } from './login-flow-model.js';
 
 const initialPostForm = {
@@ -132,7 +133,7 @@ export function EngineOperationsPanel({
   const loginFlowRows = buildLoginFlowRows({ devices: filteredDevices, accounts });
   const deviceOptions = [
     { value: 'none', label: 'No device' },
-    ...activeDevices.map((device) => ({ value: String(device._id), label: deviceName(device) }))
+    ...activeDevices.map((device) => accountDeviceOption(device, deviceName(device)))
   ];
   const accountOptions = [
     { value: 'none', label: 'Select account' },

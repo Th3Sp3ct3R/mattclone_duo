@@ -5,6 +5,7 @@ import { EngineDevice } from '@julio/api/models/engine-device';
 import { enqueueAccountOnboarding as enqueueAccountOnboardingWorkflow } from '@julio/api/services/account-onboarding';
 import { dispatchEngineJob } from '@julio/api/services/job-dispatch';
 import { logger } from '@julio/api/logger';
+import { canDeviceAcceptAccount } from '@julio/api/utils/device-account-eligibility';
 import { requireAdmin } from '@julio/api/utils/auth';
 import { sendError } from '@julio/api/utils/response';
 
@@ -56,6 +57,17 @@ export async function createAccount(req, res) {
     if (!payload.platform || !payload.credentials.username) {
       return res.status(400).json({ code: 'BAD_REQUEST', message: 'platform and username are required' });
     }
+    if (payload.assignedDeviceId) {
+      const device = await EngineDevice.findOne({ _id: payload.assignedDeviceId, retiredAt: null })
+        .select('_id provider providerDeviceId name providerMeta')
+        .lean();
+      if (!device) return res.status(404).json({ code: 'NOT_FOUND', message: 'Device not found' });
+      const eligibility = canDeviceAcceptAccount(device);
+      if (!eligibility.ok) {
+        return res.status(eligibility.status).json({ code: eligibility.code, message: eligibility.message });
+      }
+      payload.assignedDeviceId = device._id;
+    }
     const account = await EngineAccount.create(payload);
     return res.json({ ok: true, account });
   } catch (err) {
@@ -86,8 +98,14 @@ export async function assignDevice(req, res) {
     const deviceId = req.body?.deviceId || req.body?.assignedDeviceId;
     if (!deviceId) return res.status(400).json({ code: 'BAD_REQUEST', message: 'deviceId is required' });
 
-    const device = await EngineDevice.findOne({ _id: deviceId, retiredAt: null }).select('_id').lean();
+    const device = await EngineDevice.findOne({ _id: deviceId, retiredAt: null })
+      .select('_id provider providerDeviceId name providerMeta')
+      .lean();
     if (!device) return res.status(404).json({ code: 'NOT_FOUND', message: 'Device not found' });
+    const eligibility = canDeviceAcceptAccount(device);
+    if (!eligibility.ok) {
+      return res.status(eligibility.status).json({ code: eligibility.code, message: eligibility.message });
+    }
 
     const account = await EngineAccount.findByIdAndUpdate(
       req.params.id,

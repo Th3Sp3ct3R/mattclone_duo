@@ -32,7 +32,10 @@ const deviceProviderMetaSchema = new mongoose.Schema(
     proxyId: { type: String, trim: true, default: '' },
     proxyIp: { type: String, trim: true, default: '' },
     proxyConfigured: { type: Boolean, default: false },
-    expiredAt: { type: String, trim: true, default: '' }
+    expiredAt: { type: String, trim: true, default: '' },
+    subscriptionVerified: { type: Boolean, default: false },
+    subscriptionStatus: { type: String, trim: true, default: '' },
+    subscriptionExpiresAt: { type: String, trim: true, default: '' }
   },
   { _id: false }
 );
