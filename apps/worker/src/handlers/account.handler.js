@@ -62,7 +62,7 @@ export async function handleAccountJob(payload) {
     const device = await resolveAccountDevice(account);
 
     return withDeviceLease(device._id, async (leasedDevice) => {
-      const provider = getProvider();
+      const provider = getProvider(leasedDevice.provider);
       const event = (message, data = {}, level = 'info') =>
         emitDeviceEvent({
           deviceId: leasedDevice._id,

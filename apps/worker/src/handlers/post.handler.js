@@ -22,7 +22,7 @@ export async function handlePostJob(payload) {
     if (!deviceId) throw new Error('Post has no device and account has no assigned device');
 
     return withDeviceLease(deviceId, async (device) => {
-      const provider = getProvider();
+      const provider = getProvider(device.provider);
       const event = (message, data = {}) =>
         emitDeviceEvent({
           deviceId: device._id,

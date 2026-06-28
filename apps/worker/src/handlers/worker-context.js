@@ -59,10 +59,12 @@ async function emitReachabilityFailure(emit, message, data) {
 }
 
 export async function assertDeviceReachable(provider, device, emit = null) {
+  const providerName = (device?.provider || 'cloud-phone').toString();
+  const providerLabel = providerName.toUpperCase();
   const providerDeviceId = device?.providerDeviceId;
   if (!providerDeviceId) {
-    throw new DeviceUnavailableError('Device has no VMOS providerDeviceId', {
-      details: { deviceId: device?._id ? String(device._id) : null }
+    throw new DeviceUnavailableError(`Device has no ${providerLabel} providerDeviceId`, {
+      details: { deviceId: device?._id ? String(device._id) : null, provider: providerName }
     });
   }
 
@@ -70,14 +72,15 @@ export async function assertDeviceReachable(provider, device, emit = null) {
   try {
     instance = await provider.describeInstance(providerDeviceId);
   } catch (err) {
-    const message = `Unable to validate VMOS instance ${providerDeviceId}`;
+    const message = `Unable to validate ${providerLabel} instance ${providerDeviceId}`;
     await emitReachabilityFailure(emit, message, {
       providerDeviceId,
-      reason: err?.message || 'VMOS validation failed'
+      provider: providerName,
+      reason: err?.message || `${providerLabel} validation failed`
     });
     throw new DeviceUnavailableError(message, {
       cause: err,
-      details: { providerDeviceId, reason: err?.message || '' }
+      details: { providerDeviceId, provider: providerName, reason: err?.message || '' }
     });
   }
 
@@ -85,10 +88,10 @@ export async function assertDeviceReachable(provider, device, emit = null) {
     const reason = instance ? 'offline' : 'not_found';
     const message =
       reason === 'not_found'
-        ? `VMOS instance not found for padCode ${providerDeviceId}`
-        : `VMOS instance offline for padCode ${providerDeviceId}`;
-    await emitReachabilityFailure(emit, message, { providerDeviceId, reason });
-    throw new DeviceUnavailableError(message, { details: { providerDeviceId, reason } });
+        ? `${providerLabel} instance not found for padCode ${providerDeviceId}`
+        : `${providerLabel} instance offline for padCode ${providerDeviceId}`;
+    await emitReachabilityFailure(emit, message, { providerDeviceId, provider: providerName, reason });
+    throw new DeviceUnavailableError(message, { details: { providerDeviceId, provider: providerName, reason } });
   }
 
   return instance;
