@@ -7,6 +7,7 @@ import { runEngineJob } from '../engine-job-runner.js';
 import { emitDeviceEvent } from '../device-event-emitter.js';
 import { assertDeviceReachable, buildHumanContext, getProvider, withDeviceLease } from './worker-context.js';
 import { PreflightError, checkpointReasonForPreflightCode, runJobPreflight } from './preflight.js';
+import { hydrateAccountSecrets } from './secret-resolver.js';
 
 export async function handlePostJob(payload) {
   return runEngineJob(payload, async ({ jobName, targetId }, jobRun) => {
@@ -88,8 +89,9 @@ export async function handlePostJob(payload) {
 
       const publishOptions = post.publishOptions || {};
       const adapter = getPlatformAdapter(post.platform || account.platform);
+      const runtimeAccount = await hydrateAccountSecrets(account);
       await event('publishing post started', { soundQuery: publishOptions.soundQuery || '' });
-      const result = await adapter.publish(controller, post, account, {
+      const result = await adapter.publish(controller, post, runtimeAccount, {
         actor,
         stagedMedia,
         onEvent: (message, data = {}) => event(message, data)

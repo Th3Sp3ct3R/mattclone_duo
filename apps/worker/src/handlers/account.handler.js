@@ -9,6 +9,7 @@ import { runEngineJob } from '../engine-job-runner.js';
 import { emitDeviceEvent } from '../device-event-emitter.js';
 import { assertDeviceReachable, buildHumanContext, getProvider, withDeviceLease } from './worker-context.js';
 import { PreflightError, checkpointReasonForPreflightCode, runJobPreflight } from './preflight.js';
+import { hydrateAccountSecrets } from './secret-resolver.js';
 
 const PERSISTABLE_FAILURE_STATUSES = new Set(['checkpointed', 'banned', 'cooldown', 'retired']);
 
@@ -100,7 +101,8 @@ export async function handleAccountJob(payload) {
         accountId: account._id,
         deviceId: leasedDevice._id
       });
-      const emailCodeFetcher = getAccountEmailFetcher(account);
+      const runtimeAccount = await hydrateAccountSecrets(account);
+      const emailCodeFetcher = getAccountEmailFetcher(runtimeAccount);
       const adapter = getPlatformAdapter(account.platform);
 
       await EngineAccount.findByIdAndUpdate(account._id, {
@@ -112,7 +114,7 @@ export async function handleAccountJob(payload) {
       let result;
       if (jobName === 'login') {
         await event('account login started');
-        result = await adapter.login(controller, account, { actor, emailCodeFetcher });
+        result = await adapter.login(controller, runtimeAccount, { actor, emailCodeFetcher });
         if (result?.status === 'missing_credentials') {
           await event('account login skipped: missing credentials', { reason: result.reason || '' }, 'error');
         }
@@ -121,17 +123,17 @@ export async function handleAccountJob(payload) {
         }
       } else if (jobName === 'profile-setup') {
         await event('account profile setup started');
-        result = await adapter.setupProfile(controller, account, { actor });
+        result = await adapter.setupProfile(controller, runtimeAccount, { actor });
       } else if (jobName === 'warmup') {
         await event('account warmup started');
-        result = await adapter.warmup(controller, account, {
+        result = await adapter.warmup(controller, runtimeAccount, {
           actor,
           provider,
           providerDeviceId: leasedDevice.providerDeviceId
         });
       } else {
         await event('account health check started');
-        result = await adapter.healthCheck(controller, account, { actor });
+        result = await adapter.healthCheck(controller, runtimeAccount, { actor });
       }
       await event('account action completed', { status: result.status || '', success: result.success !== false });
 
