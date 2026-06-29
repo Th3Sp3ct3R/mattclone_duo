@@ -1,0 +1,23 @@
+# Example authorized account manifest.
+#
+# Copy to authorized-accounts.csv and fill in your own secret references.
+# NEVER put raw passwords, tokens, or TOTP seeds in this file.
+#
+# Secret references must use one of:
+#   keychain:<name>   — macOS Keychain generic password (service = macOS user)
+#   env:<VAR_NAME>    — environment variable
+#
+# Required columns:
+#   platform,username,password_secret_ref
+#
+# Optional columns:
+#   email,email_password_secret_ref,totp_secret_ref,device_name,tags
+#
+# platform must be one of: instagram, tiktok, youtube
+# tags: semicolon or pipe separated (e.g. opencoven;test)
+# device_name: match by _id, providerDeviceId, or name from engine_devices
+
+platform,username,email,password_secret_ref,email_password_secret_ref,totp_secret_ref,device_name,tags
+instagram,your_handle,owner@example.com,keychain:ig-your-handle-password,keychain:ig-your-handle-email,,SxarH,opencoven
+tiktok,your_handle,owner@example.com,env:TIKTOK_PASSWORD,,,FpPU2,opencoven
+youtube,your_channel,owner@example.com,keychain:yt-your-channel-password,,keychain:yt-your-channel-totp,,opencoven;test

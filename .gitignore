@@ -98,3 +98,7 @@ suno-session-persist.json
 
 # Local artifacts
 output/
+
+# Authorized account manifests (contain secret references — never commit)
+authorized-accounts*.csv
+!authorized-accounts*.example.csv

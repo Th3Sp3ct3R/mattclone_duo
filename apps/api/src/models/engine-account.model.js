@@ -17,7 +17,12 @@ const credentialsSchema = new mongoose.Schema(
     password: { type: String, trim: true, default: '' },
     email: { type: String, trim: true, lowercase: true, default: '' },
     emailPassword: { type: String, trim: true, default: '' },
-    immutableUserId: { type: String, trim: true, default: '' }
+    immutableUserId: { type: String, trim: true, default: '' },
+    secretRefs: {
+      password: { type: String, trim: true, default: '' },
+      emailPassword: { type: String, trim: true, default: '' },
+      totp: { type: String, trim: true, default: '' }
+    }
   },
   { _id: false }
 );
