@@ -82,8 +82,13 @@ function getDjekxaClient() {
 export async function getDjekxaBalance(req, res) {
   try {
     requireAdmin(req);
+    // Djekxa is an optional integration; when no API key is configured, report
+    // an unconfigured balance instead of a 500 so the operator console stays clean.
+    if (!env.djekxaApiKey) {
+      return res.json({ ok: true, balance: null, configured: false });
+    }
     const balance = await getDjekxaClient().getBalance();
-    return res.json({ ok: true, balance });
+    return res.json({ ok: true, balance, configured: true });
   } catch (err) {
     logger.error('Engine Djekxa balance fetch failed', err);
     return sendError(res, err, 'Internal error');

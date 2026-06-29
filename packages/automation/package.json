@@ -8,6 +8,7 @@
     ".": "./src/index.js"
   },
   "scripts": {
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js",
     "lint": "eslint .",
     "build": "node -e \"console.log('automation: no build step')\""
   },

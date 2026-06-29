@@ -3,6 +3,10 @@ import { Router } from 'express';
 import {
   createDevice,
   enqueueDeviceAction,
+  getDeviceFocus,
+  getDeviceStatus,
+  getDuoPlusFrames,
+  initDuoPlusProxy,
   listDevices,
   syncDevices,
   updateDevice
@@ -76,9 +80,13 @@ export function createEngineRouter() {
   router.get('/job-runs', listJobRuns);
 
   router.get('/devices', listDevices);
+  router.get('/duoplus/frames', getDuoPlusFrames);
   router.post('/devices', createDevice);
   router.post('/devices/sync', syncDevices);
   router.put('/devices/:id', updateDevice);
+  router.get('/devices/:id/status', getDeviceStatus);
+  router.get('/devices/:id/focus', getDeviceFocus);
+  router.post('/devices/:id/proxy/init', initDuoPlusProxy);
   router.get('/devices/:id/events', listDeviceEvents);
   router.get('/devices/:id/events/stream', streamDeviceEvents);
   router.post('/devices/:id/actions/:action', enqueueDeviceAction);

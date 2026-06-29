@@ -28,7 +28,8 @@
     "seed:users": "yarn workspace @julio/api seed:users",
     "seed:blog": "yarn workspace @julio/api seed:blog",
     "seed:engine": "yarn workspace @julio/api seed:engine",
-    "seed:all": "yarn workspace @julio/api seed:all"
+    "seed:all": "yarn workspace @julio/api seed:all",
+    "import:authorized-accounts": "yarn workspace @julio/api import:authorized-accounts"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
@@ -38,5 +39,4 @@
     "jest": "^29.7.0"
   }
 }
-
 

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const PLATFORMS = ['tiktok', 'instagram'];
+const PLATFORMS = ['tiktok', 'instagram', 'youtube'];
 const POST_STATUSES = [
   'draft',
   'queued',
@@ -47,6 +47,7 @@ const failureSchema = new mongoose.Schema(
 const enginePostSchema = new mongoose.Schema(
   {
     platform: { type: String, enum: PLATFORMS, required: true, index: true },
+    postType: { type: String, enum: ['', 'reel', 'video', 'short'], default: '' },
     status: { type: String, enum: POST_STATUSES, default: 'draft', index: true },
     accountId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineAccount', required: true, index: true },
     deviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineDevice', default: null, index: true },
@@ -76,3 +77,5 @@ enginePostSchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
 
 export const EnginePost =
   mongoose.models.EnginePost || mongoose.model('EnginePost', enginePostSchema);
+
+export { PLATFORMS, POST_STATUSES };

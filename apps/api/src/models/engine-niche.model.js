@@ -19,7 +19,7 @@ const engineNicheSchema = new mongoose.Schema(
     name: { type: String, trim: true, required: true },
     description: { type: String, trim: true, default: '' },
     active: { type: Boolean, default: true, index: true },
-    targetPlatforms: [{ type: String, enum: ['tiktok', 'instagram'] }],
+    targetPlatforms: [{ type: String, enum: ['tiktok', 'instagram', 'youtube'] }],
     sources: [sourceSchema],
     postingCadence: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
     metadata: { type: mongoose.Schema.Types.Mixed, default: () => ({}) }

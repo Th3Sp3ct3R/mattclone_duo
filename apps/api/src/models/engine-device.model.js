@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const PROVIDERS = ['vmos'];
+const PROVIDERS = ['vmos', 'duoplus'];
 const DEVICE_STATUSES = ['provisioning', 'stopped', 'starting', 'running', 'unhealthy', 'retired'];
 
 const deviceRuntimeSchema = new mongoose.Schema(
@@ -24,6 +24,23 @@ const deviceCapacitySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const deviceProviderMetaSchema = new mongoose.Schema(
+  {
+    rawStatus: { type: Number, default: null },
+    os: { type: String, trim: true, default: '' },
+    ip: { type: String, trim: true, default: '' },
+    proxyId: { type: String, trim: true, default: '' },
+    proxyIp: { type: String, trim: true, default: '' },
+    proxyConfigured: { type: Boolean, default: false },
+    expiredAt: { type: String, trim: true, default: '' },
+    subscriptionVerified: { type: Boolean, default: false },
+    subscriptionStatus: { type: String, trim: true, default: '' },
+    subscriptionExpiresAt: { type: String, trim: true, default: '' },
+    installedApps: { type: mongoose.Schema.Types.Mixed, default: () => ({}) }
+  },
+  { _id: false }
+);
+
 const engineDeviceSchema = new mongoose.Schema(
   {
     provider: { type: String, enum: PROVIDERS, default: 'vmos', index: true },
@@ -35,6 +52,7 @@ const engineDeviceSchema = new mongoose.Schema(
     notes: { type: String, trim: true, default: '' },
     runtime: { type: deviceRuntimeSchema, default: () => ({}) },
     capacity: { type: deviceCapacitySchema, default: () => ({}) },
+    providerMeta: { type: deviceProviderMetaSchema, default: () => ({}) },
     leasedUntil: { type: Date, default: null, index: true },
     leasedBy: { type: String, trim: true, default: '', index: true },
     retiredAt: { type: Date, default: null }
@@ -47,3 +65,5 @@ engineDeviceSchema.index({ status: 1, leasedUntil: 1, updatedAt: 1 });
 
 export const EngineDevice =
   mongoose.models.EngineDevice || mongoose.model('EngineDevice', engineDeviceSchema);
+
+export { PROVIDERS };

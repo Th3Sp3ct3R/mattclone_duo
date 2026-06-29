@@ -5,14 +5,57 @@ function inferPlatform(productName = '') {
   return 'tiktok';
 }
 
+// A real email address: has an "@" AND a dotted TLD. This deliberately rejects
+// password-like tokens that merely contain "@" (e.g. "andy@5246784").
+const EMAIL_RE = /^[^\s@:|;]+@[^\s@:|;]+\.[a-z]{2,}$/i;
+
+function isEmail(value) {
+  return EMAIL_RE.test(String(value || '').trim());
+}
+
+// Suppliers ship credential files in different field orders. We locate the
+// email by shape and map fields around it instead of assuming a fixed order.
+// Confirmed formats:
+//   - username:password:email:emailPassword   (legacy/classic, email at idx 2)
+//   - email:password:username                  (e.g. djekxa TikTok autoreg)
+//   - email:emailPassword:username:password    (email-first 4-field)
+//   - username:password:email                  (3-field, email last)
+// emailPassword falls back to the account password (combolists usually reuse it)
+// so IMAP code-fetch has a chance when no explicit email password is provided.
+function mapCredentialParts(rawParts = []) {
+  const parts = rawParts.map((part) => String(part || '').trim());
+  const emailIdx = parts.findIndex(isEmail);
+  let username = '';
+  let password = '';
+  let email = '';
+  let emailPassword = '';
+
+  if (parts.length >= 4 && emailIdx === 0) {
+    [email, emailPassword, username, password] = parts;
+  } else if (parts.length >= 4) {
+    [username, password, email, emailPassword] = parts;
+  } else if (parts.length === 3 && emailIdx === 0) {
+    [email, password, username] = parts;
+  } else if (parts.length === 3) {
+    [username, password, email] = parts;
+  } else if (parts.length === 2) {
+    [username, password] = parts;
+  } else {
+    return null;
+  }
+
+  if (!emailPassword && email) emailPassword = password;
+  return { username, password, email: email || '', emailPassword: emailPassword || '' };
+}
+
 function parseCredentialLine(line = '') {
   const normalized = String(line).trim();
   if (!normalized || normalized.startsWith('#')) return null;
   const delimiter = ['|', ':', ';'].find((candidate) => normalized.includes(candidate));
   if (!delimiter) return null;
-  const [username, password, email, emailPassword] = normalized.split(delimiter).map((part) => part.trim());
-  if (!username || !password) return null;
-  return { username, password, email: email || '', emailPassword: emailPassword || '' };
+  const mapped = mapCredentialParts(normalized.split(delimiter));
+  if (!mapped || !mapped.username || !mapped.password) return null;
+  return mapped;
 }
 
 export function parseCredentialFile(text = '') {

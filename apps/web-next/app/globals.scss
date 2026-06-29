@@ -172,7 +172,7 @@ html {
 .c-AppHeaderBrand__name {
   font-family: var(--ui-font-brand, var(--ui-font));
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 
 .HomePageAnchor {
@@ -358,7 +358,7 @@ html {
   font-family: var(--ui-font-brand, var(--ui-font));
   font-size: clamp(56px, 10vw, 140px);
   line-height: 0.9;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   text-align: left;
   opacity: 0;
   transform: translateY(12px);
@@ -376,7 +376,7 @@ html {
   gap: 6px;
   font-size: clamp(88px, 14.3vw, 208px);
   line-height: 0.9;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   font-weight: 300;
 }
 
@@ -433,7 +433,7 @@ html {
 
 .Eyebrow {
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   font-size: 12px;
   color: var(--ui-muted);
 }
@@ -658,7 +658,7 @@ html {
 .HomeProfilesGroupTitle {
   margin: 0;
   font-size: clamp(24px, 2.4vw, 30px);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .HomeProfilesCard.ui-Card {
@@ -812,7 +812,7 @@ html {
   margin: 0;
   font-size: clamp(32px, 4vw, 52px);
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .BlogPostHeader .Kicker {
@@ -824,7 +824,7 @@ html {
 .BlogPostMeta {
   font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   color: var(--ui-muted);
 }
 
@@ -1038,5 +1038,744 @@ html {
   background: var(--ui-bg);
 }
 
+/* ---- Engine design-system compliance pass ----
+   Token-driven so the /engine page works in light and dark themes.
+   Status semantics:
+   - ok / live / running  -> var(--ui-mint)   ("alive")
+   - failed / error       -> var(--ui-error)
+   - working / warning    -> monochrome tint  (design-system: keep accent minimal)
+   - idle / missing       -> var(--ui-muted)
+   Surfaces use --ui-* plus color-mix so they theme automatically.
+*/
 
+.ProviderChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-input);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--ui-muted);
+  line-height: 1.4;
+}
+
+.ProviderChip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ProviderChip--duoplus {
+  color: var(--ui-fg);
+  border-color: var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-fg) 7%, var(--ui-input));
+}
+
+.LoginFlowBoard {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-border);
+}
+
+.LoginFlowBoard--empty {
+  padding: 14px;
+  background: var(--ui-bg);
+  color: var(--ui-muted);
+  font-size: 13px;
+}
+
+.LoginFlowBoard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-small);
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--ui-bg) 94%, var(--ui-fg));
+}
+
+.LoginFlowBoard__header h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.LoginFlowRows {
+  display: grid;
+  gap: 1px;
+}
+
+.LoginFlowRow {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--ui-bg);
+  border-left: 3px solid color-mix(in srgb, var(--ui-fg) 16%, transparent);
+}
+
+.LoginFlowRow--ok {
+  border-left-color: color-mix(in srgb, var(--ui-mint) 65%, var(--ui-border));
+}
+
+.LoginFlowRow--working,
+.LoginFlowRow--retry {
+  border-left-color: color-mix(in srgb, var(--ui-fg) 65%, var(--ui-border));
+}
+
+.LoginFlowRow--blocked,
+.LoginFlowRow--failed {
+  border-left-color: var(--ui-error);
+}
+
+.LoginFlowRow__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-small);
+}
+
+.LoginFlowRow__identity,
+.LoginFlowRow__commands {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.LoginFlowRow__identity h4 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.LoginFlowRow__metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(90px, 1fr));
+  gap: 1px;
+  background: var(--ui-border);
+  border: 1px solid var(--ui-border);
+}
+
+.LoginFlowRow__metrics > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px;
+  background: color-mix(in srgb, var(--ui-bg) 96%, var(--ui-fg));
+}
+
+.LoginFlowRow__metrics span {
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.LoginFlowRow__metrics strong {
+  min-width: 0;
+  color: var(--ui-fg);
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.LoginStage,
+.LoginProxy,
+.LoginEvent {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 7px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-input);
+  color: var(--ui-fg);
+  overflow-wrap: anywhere;
+}
+
+.LoginStage--ok,
+.LoginProxy--assigned,
+.LoginProxy--configured,
+.LoginEvent--info {
+  border-color: color-mix(in srgb, var(--ui-mint) 45%, var(--ui-border));
+}
+
+.LoginStage--working,
+.LoginStage--retry,
+.LoginProxy--retry,
+.LoginEvent--warn {
+  border-color: color-mix(in srgb, var(--ui-fg) 55%, var(--ui-border));
+  color: var(--ui-fg);
+}
+
+.LoginStage--blocked,
+.LoginStage--failed,
+.LoginEvent--error {
+  border-color: var(--ui-error);
+  color: var(--ui-error);
+}
+
+.LoginProxy--missing,
+.LoginStage--idle,
+.LoginEvent--none {
+  color: var(--ui-muted);
+}
+
+.LoginFlowRow__event,
+.LoginFlowRow__alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.LoginFlowRow__event {
+  color: var(--ui-muted);
+}
+
+.LoginFlowRow__event > span:last-child,
+.LoginFlowRow__alert {
+  overflow-wrap: anywhere;
+}
+
+.LoginFlowRow__alert {
+  color: var(--ui-error);
+}
+
+.ProxyState {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-input);
+}
+
+.ProxyState--ok {
+  color: var(--ui-mint);
+  border-color: color-mix(in srgb, var(--ui-mint) 40%, var(--ui-border));
+}
+
+.ProxyState--missing {
+  color: var(--ui-error);
+  border-color: color-mix(in srgb, var(--ui-error) 45%, var(--ui-border));
+}
+
+.DuoPlusFocusPanel {
+  display: grid;
+  gap: var(--ui-space-small);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--ui-fg) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--ui-fg) 2.5%, transparent) 1px, transparent 1px),
+    color-mix(in srgb, var(--ui-bg) 94%, var(--ui-fg));
+  background-size: 24px 24px;
+  padding: var(--ui-space-medium);
+}
+
+.DuoPlusFocusPanel__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--ui-space-small);
+}
+
+.DuoPlusFocusPanel__header h3 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.DuoPlusFocusPanel__body {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: var(--ui-space-medium);
+  align-items: stretch;
+}
+
+.DuoPlusFocusPanel__screen {
+  aspect-ratio: 9 / 16;
+  min-height: 320px;
+  max-height: 520px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ui-bg) 92%, var(--ui-fg));
+}
+
+.DuoPlusFocusPanel__screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.DuoPlusFocusPanel__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: color-mix(in srgb, var(--ui-bg) 92%, var(--ui-fg));
+}
+
+.DuoPlusFocusPanel__quality {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-small);
+  flex-wrap: wrap;
+}
+
+.DuoPlusFocusPanel__note {
+  margin: 0;
+  color: var(--ui-muted);
+}
+
+.FocusModeBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  color: var(--ui-muted);
+}
+
+.FocusModeBadge--live {
+  color: var(--ui-mint);
+  border-color: color-mix(in srgb, var(--ui-mint) 45%, var(--ui-border));
+}
+
+.DuoPlusFocusPanel__empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: var(--ui-space-medium);
+  text-align: center;
+  color: var(--ui-muted);
+}
+
+.DuoPlusFocusPanel__empty span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.DuoPlusFocusPanel__empty strong {
+  color: var(--ui-fg);
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.DuoPlusFocusPanel__empty small {
+  max-width: 220px;
+  line-height: 1.45;
+}
+
+.DuoPlusFocusPanel__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  align-content: start;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-border);
+}
+
+.DuoPlusFocusPanel__meta > div,
+.DuoPlusFocusPanel__external {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--ui-bg);
+}
+
+.DuoPlusFocusPanel__meta span {
+  color: var(--ui-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.DuoPlusFocusPanel__meta strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ui-fg);
+  letter-spacing: 0;
+}
+
+.DuoPlusFocusPanel__external {
+  color: var(--ui-fg);
+  text-decoration: none;
+  place-items: center;
+  border: 0;
+  font-weight: 700;
+}
+
+.DuoPlusFocusPanel__external:hover {
+  background: color-mix(in srgb, var(--ui-fg) 8%, var(--ui-bg));
+}
+
+@media (max-width: 860px) {
+  .LoginFlowRow__main,
+  .DuoPlusFocusPanel__header,
+  .DuoPlusFocusPanel__body {
+    grid-template-columns: 1fr;
+  }
+
+  .LoginFlowRow__main {
+    display: grid;
+  }
+
+  .LoginFlowRow__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .DuoPlusFocusPanel__header {
+    display: grid;
+  }
+
+  .DuoPlusFocusPanel__screen {
+    max-height: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .LoginFlowBoard__header,
+  .LoginFlowRow__commands {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .LoginFlowRow__metrics,
+  .DuoPlusFocusPanel__meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- DuoPlus Focus Mode (cloud phone wall) ---- */
+
+.FocusMode {
+  display: grid;
+  gap: var(--ui-space-medium);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--ui-fg) 3%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--ui-fg) 2%, transparent) 1px, transparent 1px),
+    color-mix(in srgb, var(--ui-bg) 96%, var(--ui-fg));
+  background-size: 28px 28px;
+  padding: var(--ui-space-medium);
+}
+
+.FocusMode__bar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--ui-space-small);
+}
+
+.FocusMode__title h3 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.FocusMode__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-small);
+  flex-wrap: wrap;
+}
+
+.FocusMode__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ui-fg);
+}
+
+.FocusMode__demo {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--ui-border-strong);
+  color: var(--ui-muted);
+}
+
+.FocusMode__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-muted);
+  display: inline-block;
+}
+
+.FocusMode__dot--ok {
+  background: var(--ui-mint);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-mint) 22%, transparent);
+}
+
+.FocusMode__empty {
+  padding: var(--ui-space-large);
+  text-align: center;
+  color: var(--ui-muted);
+  border: 1px dashed var(--ui-border);
+  border-radius: var(--ui-radius);
+}
+
+.FocusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--ui-space-medium);
+}
+
+.FocusPhone {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.FocusPhone:hover {
+  border-color: var(--ui-border-strong);
+  transform: translateY(-2px);
+}
+
+.FocusPhone--ok {
+  border-color: color-mix(in srgb, var(--ui-mint) 45%, var(--ui-border));
+}
+
+.FocusPhone--failed {
+  border-color: color-mix(in srgb, var(--ui-error) 45%, var(--ui-border));
+}
+
+.FocusPhone__frame {
+  position: relative;
+  aspect-ratio: 9 / 19;
+  border-radius: 22px;
+  border: 2px solid var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-bg) 92%, var(--ui-fg));
+  padding: 8px 6px;
+  overflow: hidden;
+}
+
+.FocusPhone__notch {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 8px;
+  border-radius: 0 0 8px 8px;
+  background: var(--ui-border-strong);
+  z-index: 2;
+}
+
+.FocusPhone__screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ui-bg) 94%, var(--ui-fg));
+}
+
+.FocusPhone__screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.FocusPhone__overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--ui-bg) 70%, transparent), transparent);
+}
+
+.FocusPhone__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--ui-fg);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-bg) 55%, transparent);
+}
+
+.FocusPhone__status--ok .FocusMode__dot {
+  background: var(--ui-mint);
+}
+
+.FocusPhone__status--working .FocusMode__dot {
+  background: color-mix(in srgb, var(--ui-fg) 80%, var(--ui-border));
+}
+
+.FocusPhone__status--failed .FocusMode__dot {
+  background: var(--ui-error);
+}
+
+.FocusPhone__info {
+  display: grid;
+  gap: 8px;
+}
+
+.FocusPhone__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.FocusPhone__head strong {
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.FocusPhone__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.FocusChip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  color: var(--ui-muted);
+  overflow-wrap: anywhere;
+}
+
+.FocusChip--ok {
+  color: var(--ui-mint);
+  border-color: color-mix(in srgb, var(--ui-mint) 45%, var(--ui-border));
+}
+
+.FocusChip--missing {
+  color: var(--ui-error);
+  border-color: color-mix(in srgb, var(--ui-error) 40%, var(--ui-border));
+}
+
+.FocusPhone__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.FocusPhone__actions > * {
+  flex: 1;
+}
+
+/* Simulated phone screen for demo tiles with no live screenshot.
+   App brand gradients are intentionally kept (they read as app content),
+   but the base surface now themes via --ui-* so it works in light mode. */
+.MockScreen {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  color: var(--ui-muted);
+}
+
+.MockScreen--app {
+  align-content: stretch;
+  justify-items: stretch;
+  gap: 0;
+  grid-template-rows: auto 1fr auto;
+}
+
+.MockScreen__glyph {
+  font-size: 28px;
+  color: var(--ui-fg);
+}
+
+.MockScreen__statusbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 8px;
+  font-size: 9px;
+  color: var(--ui-muted);
+  background: var(--ui-input);
+}
+
+.MockScreen__app {
+  display: grid;
+  place-items: center;
+}
+
+.MockScreen__appName {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+  color: var(--ui-fg);
+}
+
+.MockScreen--tiktok .MockScreen__app {
+  background: radial-gradient(120% 120% at 50% 30%, #25f4ee22, transparent), color-mix(in srgb, var(--ui-bg) 92%, var(--ui-fg));
+}
+
+.MockScreen--instagram .MockScreen__app {
+  background: radial-gradient(120% 120% at 50% 30%, #e1306c33, #fcaf4522), color-mix(in srgb, var(--ui-bg) 92%, var(--ui-fg));
+}
+
+.MockScreen--home .MockScreen__app {
+  background: radial-gradient(120% 120% at 50% 30%, #4a90e222, transparent), color-mix(in srgb, var(--ui-bg) 92%, var(--ui-fg));
+}
+
+.MockScreen__nav {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  background: var(--ui-input);
+}
+
+.MockScreen__nav span {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ui-fg) 30%, transparent);
+}
 

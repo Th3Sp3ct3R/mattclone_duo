@@ -14,6 +14,7 @@ async function ensureDb() {
 function sanitizePost(payload = {}) {
   return {
     platform: String(payload.platform || '').trim(),
+    postType: String(payload.postType || payload.type || '').trim(),
     accountId: payload.accountId,
     deviceId: payload.deviceId || null,
     contentPoolItemId: payload.contentPoolItemId || null,

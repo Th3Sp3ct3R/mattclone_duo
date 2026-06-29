@@ -151,7 +151,50 @@ export default function EnginePage() {
   }
 
   async function syncDevices() {
-    await runAction('devices:sync', () => api.engine.syncDevices(), 'VMOS devices synced');
+    await runAction('devices:sync:vmos', () => api.engine.syncDevices('vmos'), 'VMOS devices synced');
+  }
+
+  async function syncDuoPlusDevices() {
+    await runAction('devices:sync:duoplus', () => api.engine.syncDevices('duoplus'), 'DuoPlus devices synced');
+  }
+
+  async function refreshDeviceStatus(device) {
+    await runAction(
+      `device:${device._id}:status`,
+      () => api.engine.getDeviceStatus(device._id),
+      'Device status refreshed'
+    );
+  }
+
+  async function loadDeviceFocus(device, quality = {}) {
+    return api.engine.getDeviceFocus(device._id, quality);
+  }
+
+  async function fetchDuoPlusFrames() {
+    return api.engine.getDuoPlusFrames();
+  }
+
+  async function captureDeviceFrame(device) {
+    await runAction(
+      `device:${device._id}:screenshot`,
+      () => api.engine.enqueueDeviceAction(device._id, 'screenshot'),
+      'Frame capture queued'
+    );
+  }
+
+  // Powering on a parked cloud phone may incur temporary-startup billing, so it
+  // is gated behind an explicit confirmation — never auto-started.
+  async function startDeviceConfirmed(device) {
+    const label = device.name || device.providerDeviceId;
+    const ok =
+      typeof window === 'undefined' ||
+      window.confirm(`Power ON "${label}"? This starts a cloud phone and may incur temporary-startup charges.`);
+    if (!ok) return;
+    await runAction(
+      `device:${device._id}:start`,
+      () => api.engine.enqueueDeviceAction(device._id, 'start'),
+      'Power on queued'
+    );
   }
 
   async function createAccount(event) {
@@ -209,6 +252,7 @@ export default function EnginePage() {
     await runAction('post:create', async () => {
       await api.engine.createPost({
         platform: postForm.platform,
+        postType: postForm.platform === 'youtube' ? postForm.postType || 'short' : postForm.postType || '',
         accountId: postForm.accountId === 'none' ? '' : postForm.accountId,
         deviceId: postForm.deviceId === 'none' ? null : postForm.deviceId,
         sourceUrl: postForm.sourceUrl,
@@ -263,6 +307,13 @@ export default function EnginePage() {
         createAccount={createAccount}
         createPost={createPost}
         syncDevices={syncDevices}
+        syncDuoPlusDevices={syncDuoPlusDevices}
+        refreshDeviceStatus={refreshDeviceStatus}
+        captureDeviceFrame={captureDeviceFrame}
+        startDeviceConfirmed={startDeviceConfirmed}
+        onPoll={() => loadEngine({ showSpinner: false })}
+        fetchFrames={fetchDuoPlusFrames}
+        loadDeviceFocus={loadDeviceFocus}
         assignAccountDevice={assignAccountDevice}
         unassignAccountDevice={unassignAccountDevice}
         onboardAccount={onboardAccount}

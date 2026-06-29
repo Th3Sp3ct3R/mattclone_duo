@@ -5,9 +5,11 @@ import { EngineProxy, EngineProxyAssignment } from '@julio/api/models/engine-pro
 import { runEngineJob } from '../engine-job-runner.js';
 import { emitDeviceEvent } from '../device-event-emitter.js';
 import { getProvider, withDeviceLease } from './worker-context.js';
+import { PreflightError, runJobPreflight } from './preflight.js';
 
 const TIKTOK_PACKAGE = 'com.zhiliaoapp.musically';
 const INSTAGRAM_PACKAGE = 'com.instagram.android';
+const YOUTUBE_PACKAGE = 'com.google.android.youtube';
 
 async function getProxyForDevice(deviceId) {
   const assignment = await EngineProxyAssignment.findOne({ deviceId, deactivatedAt: null }).sort({ assignedAt: -1 });
@@ -15,11 +17,22 @@ async function getProxyForDevice(deviceId) {
   return EngineProxy.findById(assignment.proxyId);
 }
 
-async function provisionApps({ provider, device, controller }) {
+// DuoPlus: install from the DuoPlus-hosted app catalog (/app/platformList -> /app/install).
+// No APK hosting or ADB push needed.
+async function provisionDuoPlusApps({ provider, device }) {
+  const appNames = env.duoplusAppSet || [];
+  if (!appNames.length) return { provider: 'duoplus', appNames: [], installed: [], missing: [] };
+  const result = await provider.provisionApps(device.providerDeviceId, { appNames });
+  return { provider: 'duoplus', appNames, ...result };
+}
+
+// VMOS: push APK by URL + auto-install.
+async function provisionVmosApps({ provider, device, controller }) {
   const reports = [];
   const apps = [
     { platform: 'tiktok', packageName: TIKTOK_PACKAGE, apkUrl: env.apkUrls.tiktok },
-    { platform: 'instagram', packageName: INSTAGRAM_PACKAGE, apkUrl: env.apkUrls.instagram }
+    { platform: 'instagram', packageName: INSTAGRAM_PACKAGE, apkUrl: env.apkUrls.instagram },
+    { platform: 'youtube', packageName: YOUTUBE_PACKAGE, apkUrl: env.apkUrls.youtube }
   ].filter((item) => item.apkUrl);
 
   for (const app of apps) {
@@ -35,13 +48,18 @@ async function provisionApps({ provider, device, controller }) {
     });
     reports.push({ platform: app.platform, installed: false, taskId: upload.data?.taskId || '' });
   }
-  return reports;
+  return { provider: 'vmos', apps: reports };
+}
+
+function provisionApps({ provider, device, controller }) {
+  if (device.provider === 'duoplus') return provisionDuoPlusApps({ provider, device });
+  return provisionVmosApps({ provider, device, controller });
 }
 
 export async function handleDeviceJob(payload) {
   return runEngineJob(payload, async ({ jobName, targetId }, jobRun) =>
     withDeviceLease(targetId, async (device) => {
-      const provider = getProvider();
+      const provider = getProvider(device.provider);
       const now = new Date();
       const event = (message, data = {}) =>
         emitDeviceEvent({ deviceId: device._id, source: 'device', jobRunId: jobRun._id, jobName, message, data });
@@ -76,9 +94,28 @@ export async function handleDeviceJob(payload) {
 
       if (jobName === 'provision') {
         const proxy = await getProxyForDevice(device._id);
+        const metaUpdate = {};
         if (proxy?.endpoint?.host) {
           await event('applying device proxy', { proxyId: String(proxy._id) });
           await provider.setSmartIp(device.providerDeviceId, proxy.endpoint);
+          metaUpdate['providerMeta.proxyConfigured'] = true;
+          metaUpdate['providerMeta.proxyId'] = String(proxy._id);
+          metaUpdate['providerMeta.proxyIp'] = String(proxy.endpoint.host || '');
+        }
+        const preflightDevice = {
+          ...(device.toObject?.() || device),
+          providerMeta: {
+            ...(device.providerMeta?.toObject?.() || device.providerMeta || {}),
+            ...(metaUpdate['providerMeta.proxyConfigured'] ? { proxyConfigured: true } : {})
+          }
+        };
+        try {
+          await runJobPreflight({ provider, device: preflightDevice });
+        } catch (err) {
+          if (err instanceof PreflightError) {
+            await event('device provision preflight failed', { code: err.code, reason: err.checkpointReason });
+          }
+          throw err;
         }
         await event('provisioning platform apps');
         const apps = await provisionApps({ provider, device, controller });
@@ -86,7 +123,9 @@ export async function handleDeviceJob(payload) {
           status: 'running',
           'runtime.adbAddress': adb.data?.adb || '',
           'runtime.adbPassword': adb.data?.key || '',
-          'runtime.lastHeartbeatAt': now
+          'runtime.lastHeartbeatAt': now,
+          'providerMeta.installedApps': apps,
+          ...metaUpdate
         });
         await event('device provisioned', { apps });
         return { provisioned: true, apps };

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const PLATFORMS = ['tiktok', 'instagram'];
+const PLATFORMS = ['tiktok', 'instagram', 'youtube'];
 
 const metricsSchema = new mongoose.Schema(
   {

@@ -1,11 +1,13 @@
 import { EngineAccount } from '@julio/api/models/engine-account';
 import { EnginePost } from '@julio/api/models/engine-post';
-import { publishInstagramReel, publishTikTokVideoUi } from '@julio/automation';
+import { getPlatformAdapter } from '@julio/automation';
 import { stageMediaForDevice } from '@julio/media';
 
 import { runEngineJob } from '../engine-job-runner.js';
 import { emitDeviceEvent } from '../device-event-emitter.js';
 import { assertDeviceReachable, buildHumanContext, getProvider, withDeviceLease } from './worker-context.js';
+import { PreflightError, checkpointReasonForPreflightCode, runJobPreflight } from './preflight.js';
+import { hydrateAccountSecrets } from './secret-resolver.js';
 
 export async function handlePostJob(payload) {
   return runEngineJob(payload, async ({ jobName, targetId }, jobRun) => {
@@ -22,7 +24,7 @@ export async function handlePostJob(payload) {
     if (!deviceId) throw new Error('Post has no device and account has no assigned device');
 
     return withDeviceLease(deviceId, async (device) => {
-      const provider = getProvider();
+      const provider = getProvider(device.provider);
       const event = (message, data = {}) =>
         emitDeviceEvent({
           deviceId: device._id,
@@ -43,6 +45,25 @@ export async function handlePostJob(payload) {
           data: { postId: String(post._id), accountId: String(account._id), platform: post.platform, ...data }
         })
       );
+      try {
+        await runJobPreflight({ provider, device, account, post, platform: post.platform || account.platform });
+      } catch (err) {
+        if (err instanceof PreflightError) {
+          const checkpointReason = checkpointReasonForPreflightCode(err.code);
+          await event('post preflight failed', { code: err.code, reason: checkpointReason });
+          await EngineAccount.findByIdAndUpdate(account._id, {
+            status: 'checkpointed',
+            checkpointReason,
+            'health.lastFailureReason': err.message,
+            'health.consecutiveFailures': Number(account.health?.consecutiveFailures || 0) + 1
+          });
+          await EnginePost.findByIdAndUpdate(post._id, {
+            status: 'failed',
+            failure: { code: err.code, message: err.message, failedAt: new Date() }
+          });
+        }
+        throw err;
+      }
       const controller = provider.createDirectController(device.providerDeviceId);
       const { actor } = await buildHumanContext({
         controller,
@@ -67,29 +88,14 @@ export async function handlePostJob(payload) {
       await event('media staged for publish', { publicUrl: stagedMedia.publicUrl });
 
       const publishOptions = post.publishOptions || {};
+      const adapter = getPlatformAdapter(post.platform || account.platform);
+      const runtimeAccount = await hydrateAccountSecrets(account);
       await event('publishing post started', { soundQuery: publishOptions.soundQuery || '' });
-      const result =
-        post.platform === 'instagram'
-          ? await publishInstagramReel(controller, {
-              videoUrl: stagedMedia.publicUrl,
-              caption: publishOptions.caption,
-              hashtags: publishOptions.hashtags || []
-            })
-          : await publishTikTokVideoUi(
-            controller,
-            {
-              videoUrl: stagedMedia.publicUrl,
-              caption: publishOptions.caption,
-              hashtags: publishOptions.hashtags || [],
-              coverFrameIndex: publishOptions.coverFrameIndex,
-              soundQuery: publishOptions.soundQuery || '',
-              privacy: publishOptions.privacy || ''
-            },
-            {
-              actor,
-              onEvent: (message, data = {}) => event(message, data)
-            }
-          );
+      const result = await adapter.publish(controller, post, runtimeAccount, {
+        actor,
+        stagedMedia,
+        onEvent: (message, data = {}) => event(message, data)
+      });
 
       await EnginePost.findByIdAndUpdate(post._id, {
         status: result.success === false ? 'failed' : 'posted',
