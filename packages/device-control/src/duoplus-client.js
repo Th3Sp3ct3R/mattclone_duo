@@ -372,6 +372,303 @@ export class DuoplusClient {
     });
   }
 
+
+  // ---- Device lifecycle: purchase & renewal ----
+
+  purchaseCloudPhones({ os, duration = '30', quantity = 1, couponCode = '', renewalStatus = 1 } = {}) {
+    return this.request('/api/v1/cloudPhone/purchase', {
+      body: {
+        os: String(os || ''),
+        duration: String(duration),
+        quantity: Number(quantity) || 1,
+        coupon_code: String(couponCode || ''),
+        renewal_status: Number(renewalStatus)
+      }
+    });
+  }
+
+  renewCloudPhones(imageIds, { duration = '30', couponCode = '' } = {}) {
+    return this.request('/api/v1/cloudPhone/renewal', {
+      body: {
+        image_ids: asArray(imageIds),
+        duration: String(duration),
+        coupon_code: String(couponCode || '')
+      }
+    });
+  }
+
+  // ---- Device management: reset, root, ADB ----
+
+  resetDevice(imageIds) {
+    return this.request('/api/v1/cloudPhone/newPhone', {
+      body: { image_ids: asArray(imageIds) }
+    });
+  }
+
+  batchSetRoot(imageIds, status, pkgs = []) {
+    return this.request('/api/v1/cloudPhone/batchRoot', {
+      body: { image_ids: asArray(imageIds), status: Number(status), pkgs: asArray(pkgs) }
+    });
+  }
+
+  batchEnableAdb(imageIds) {
+    return this.request('/api/v1/cloudPhone/openAdb', {
+      body: { image_ids: asArray(imageIds) }
+    });
+  }
+
+  batchDisableAdb(imageIds) {
+    return this.request('/api/v1/cloudPhone/closeAdb', {
+      body: { image_ids: asArray(imageIds) }
+    });
+  }
+
+  // ---- Proxy management (extended) ----
+
+  deleteProxies(proxyIds) {
+    return this.request('/api/v1/proxy/delete', {
+      body: { proxy_ids: asArray(proxyIds) }
+    });
+  }
+
+  refreshProxyUrl(proxyIds, url) {
+    return this.request('/api/v1/proxy/refresh', {
+      body: { proxy_ids: asArray(proxyIds), url: String(url || '') }
+    });
+  }
+
+  modifyProxy(proxyId, { name, host, port, user, password } = {}) {
+    return this.request('/api/v1/proxy/update', {
+      body: {
+        proxy_id: String(proxyId),
+        name: String(name || ''),
+        host: String(host || ''),
+        port: String(port || ''),
+        user: String(user || ''),
+        password: String(password || '')
+      }
+    });
+  }
+
+  checkProxy(proxyIds) {
+    return this.request('/api/v1/proxy/check', {
+      body: { proxy_ids: asArray(proxyIds) }
+    });
+  }
+
+  // ---- App management (extended) ----
+
+  startApp(imageIds, packageName) {
+    return this.request('/api/v1/app/start', {
+      body: { image_ids: asArray(imageIds), package_name: String(packageName || '') }
+    });
+  }
+
+  stopApp(imageIds, packageName) {
+    return this.request('/api/v1/app/stop', {
+      body: { image_ids: asArray(imageIds), package_name: String(packageName || '') }
+    });
+  }
+
+  // ---- Groups ----
+
+  listGroups(options = {}) {
+    return this.request('/api/v1/cloudPhone/groupList', {
+      body: { page: Number(options.page || 1), pagesize: Number(options.pagesize || 100) }
+    });
+  }
+
+  addToGroup(imageIds, groupIds) {
+    return this.request('/api/v1/cloudPhone/addToGroup', {
+      body: { image_ids: asArray(imageIds), group_ids: asArray(groupIds) }
+    });
+  }
+
+  moveToGroup(imageIds, groupId) {
+    return this.request('/api/v1/cloudPhone/moveToGroup', {
+      body: { image_ids: asArray(imageIds), group_id: String(groupId || '') }
+    });
+  }
+
+  createGroup(name) {
+    return this.request('/api/v1/cloudPhone/createGroup', {
+      body: { name: String(name || '') }
+    });
+  }
+
+  updateGroup(groupId, name) {
+    return this.request('/api/v1/cloudPhone/updateGroup', {
+      body: { group_id: String(groupId), name: String(name || '') }
+    });
+  }
+
+  deleteGroup(groupIds) {
+    return this.request('/api/v1/cloudPhone/deleteGroup', {
+      body: { group_ids: asArray(groupIds) }
+    });
+  }
+
+  // ---- Cloud Drive ----
+
+  listCloudDriveFiles(options = {}) {
+    return this.request('/api/v1/cloudDisk/list', {
+      body: { page: Number(options.page || 1), pagesize: Number(options.pagesize || 100) }
+    });
+  }
+
+  pushFile(imageIds, fileUrl) {
+    return this.request('/api/v1/cloudDisk/pushFiles', {
+      body: { image_ids: asArray(imageIds), file_url: String(fileUrl || '') }
+    });
+  }
+
+  uploadFileSignedUrl(fileName, isApp = false) {
+    return this.request('/api/v1/cloudDisk/signedUrl', {
+      body: { file_name: String(fileName || ''), is_app: isApp ? 1 : 0 }
+    });
+  }
+
+  deleteCloudDriveFiles(fileIds) {
+    return this.request('/api/v1/cloudDisk/delFiles', {
+      body: { file_ids: asArray(fileIds) }
+    });
+  }
+
+  // ---- Device metadata ----
+
+  listTimezones() {
+    return this.request('/api/v1/mobile/timezoneList', { body: {} });
+  }
+
+  listLanguages() {
+    return this.request('/api/v1/mobile/languageList', { body: {} });
+  }
+
+  listPhoneModels() {
+    return this.request('/api/v1/mobile/modelList', { body: {} });
+  }
+
+  listResolutions() {
+    return this.request('/api/v1/cloudPhone/resolutionList', { body: {} });
+  }
+
+  listTags() {
+    return this.request('/api/v1/cloudPhone/tagList', { body: {} });
+  }
+
+  listConnectedMembers() {
+    return this.request('/api/v1/cloudPhone/linkUserList', { body: {} });
+  }
+
+  // ---- Automation (extended) ----
+
+  listLoopTasks(options = {}) {
+    return this.request('/api/v1/automation/planList', {
+      body: { page: Number(options.page || 1), pagesize: Number(options.pagesize || 100) }
+    });
+  }
+
+  createLoopTask(task) {
+    return this.request('/api/v1/automation/addPlan', { body: task });
+  }
+
+  editLoopTask(task) {
+    return this.request('/api/v1/automation/savePlan', { body: task });
+  }
+
+  setLoopTaskStatus(planIds, status) {
+    return this.request('/api/v1/automation/setPlanStatus', {
+      body: { plan_ids: asArray(planIds), status: Number(status) }
+    });
+  }
+
+  deleteLoopTask(planIds) {
+    return this.request('/api/v1/automation/deletePlan', {
+      body: { plan_ids: asArray(planIds) }
+    });
+  }
+
+  // ---- Team / Billing ----
+
+  listOrders(options = {}) {
+    return this.request('/api/v1/team/order', {
+      body: { page: Number(options.page || 1), pagesize: Number(options.pagesize || 100) }
+    });
+  }
+
+  // ---- Cloud Numbers ----
+
+  listCloudNumbers(options = {}) {
+    return this.request('/api/v1/cloudNumber/numberList', {
+      body: { page: Number(options.page || 1), pagesize: Number(options.pagesize || 100) }
+    });
+  }
+
+  purchaseCloudNumbers({ country, quantity = 1, duration = '30' } = {}) {
+    return this.request('/api/v1/cloudNumber/purchase', {
+      body: {
+        country: String(country || ''),
+        quantity: Number(quantity) || 1,
+        duration: String(duration)
+      }
+    });
+  }
+
+  renewCloudNumbers(numberIds, { duration = '30' } = {}) {
+    return this.request('/api/v1/cloudNumber/renewal', {
+      body: { number_ids: asArray(numberIds), duration: String(duration) }
+    });
+  }
+
+  // ---- Subscription Startup ----
+
+  listSubscriptionStartup(options = {}) {
+    return this.request('/api/v1/subscriptionStartup/list', {
+      body: { page: Number(options.page || 1), pagesize: Number(options.pagesize || 100) }
+    });
+  }
+
+  purchaseSubscriptionStartup({ os, duration = '30', quantity = 1 } = {}) {
+    return this.request('/api/v1/subscriptionStartup/purchase', {
+      body: {
+        os: String(os || ''),
+        duration: String(duration),
+        quantity: Number(quantity) || 1
+      }
+    });
+  }
+
+  renewSubscriptionStartup(imageIds, { duration = '30' } = {}) {
+    return this.request('/api/v1/subscriptionStartup/renewal', {
+      body: { image_ids: asArray(imageIds), duration: String(duration) }
+    });
+  }
+
+  // ---- Misc ----
+
+  writeSms(imageId, phoneNumber, message) {
+    return this.request('/api/v1/cloudNumber/imageWriteSms', {
+      body: {
+        image_id: String(imageId || ''),
+        phone_number: String(phoneNumber || ''),
+        message: String(message || '')
+      }
+    });
+  }
+
+  scanCode(imageId, qrContent) {
+    return this.request('/api/v1/cloudPhone/scan', {
+      body: { image_id: String(imageId || ''), qr_content: String(qrContent || '') }
+    });
+  }
+
+  updateSharePassword(imageIds, password) {
+    return this.request('/api/v1/cloudPhone/updateSharePassword', {
+      body: { image_ids: asArray(imageIds), password: String(password || '') }
+    });
+  }
+
+
   normalizePhone(phone) {
     return normalizeDuoPlusPhone(phone);
   }
