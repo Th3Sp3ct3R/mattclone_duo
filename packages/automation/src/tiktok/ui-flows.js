@@ -235,7 +235,9 @@ export async function loginTikTok(
 
   let text = await visibleText(activeActor);
   if (includesAny(text, TIKTOK_VERIFICATION_TEXTS)) {
-    const verificationResult = await handleEmailVerification(activeActor, emailCodeFetcher);
+    // Post-password 2FA prompt — the authenticator (TOTP) step. Use the unified
+    // handler so a TOTP seed is preferred here, not just the email fallback.
+    const verificationResult = await handleVerification(activeActor, { emailCodeFetcher, totpSecret });
     if (verificationResult) return verificationResult;
   }
 
