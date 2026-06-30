@@ -5,10 +5,13 @@ import {
   getAllText,
   parseUIDump
 } from '@julio/device-control';
+import { generateTOTP } from '@julio/integrations';
 
 import {
+  YOUTUBE_AUTHENTICATOR_TEXTS,
   YOUTUBE_CAPTION_TEXTS,
   YOUTUBE_CAPTCHA_TEXTS,
+  YOUTUBE_CODE_REJECT_TEXTS,
   YOUTUBE_CREATE_FALLBACK_POINT,
   YOUTUBE_CREATE_TEXTS,
   YOUTUBE_DISMISS_TEXTS,
@@ -21,6 +24,7 @@ import {
   YOUTUBE_POST_TEXTS,
   YOUTUBE_SIGN_IN_TEXTS,
   YOUTUBE_SUSPICIOUS_TEXTS,
+  YOUTUBE_TRY_ANOTHER_WAY_TEXTS,
   YOUTUBE_TWO_FACTOR_TEXTS,
   YOUTUBE_UPLOAD_TEXTS
 } from './constants.js';
@@ -55,6 +59,33 @@ function challengeFromText(text = '') {
   if (includesAny(text, YOUTUBE_CAPTCHA_TEXTS)) return 'captcha';
   if (includesAny(text, YOUTUBE_SUSPICIOUS_TEXTS)) return 'suspicious_login';
   return '';
+}
+
+async function hasEditField(controller) {
+  return (await elements(controller)).some((item) => /edittext|editabletext/i.test(item.className || ''));
+}
+
+// Google 2-Step Verification with an authenticator (TOTP) seed. Best-effort steer
+// to the authenticator-code entry (Google may show a prompt/other method first),
+// type the generated code, and retry once on rejection (window rollover). Mirrors
+// instagrowth-saas relogin-fleet.ts. No-op without a seed → caller checkpoints.
+export async function handleYouTubeTwoFactor(controller, totpSecret) {
+  if (!totpSecret) return;
+  if (!(await hasEditField(controller))) {
+    await tapFirst(controller, YOUTUBE_TRY_ANOTHER_WAY_TEXTS);
+    await delay(1_500);
+    await tapFirst(controller, YOUTUBE_AUTHENTICATOR_TEXTS);
+    await delay(2_000);
+  }
+  await typeIntoFirstEditText(controller, generateTOTP(totpSecret));
+  await tapFirst(controller, YOUTUBE_NEXT_TEXTS);
+  await delay(6_000);
+  if (includesAny(textOf(await elements(controller)), YOUTUBE_CODE_REJECT_TEXTS)) {
+    await controller.clearField?.();
+    await typeIntoFirstEditText(controller, generateTOTP(totpSecret));
+    await tapFirst(controller, YOUTUBE_NEXT_TEXTS);
+    await delay(6_000);
+  }
 }
 
 async function dismissPopups(controller, rounds = 4) {
@@ -114,7 +145,7 @@ export async function checkYouTubeLoginState(controller) {
   return 'unknown';
 }
 
-export async function loginYouTube(controller, { username = '', email = '', password = '' } = {}) {
+export async function loginYouTube(controller, { username = '', email = '', password = '', totpSecret = '' } = {}) {
   const identifier = String(email || username || '').trim();
   if (!identifier || !password) {
     return {
@@ -149,7 +180,15 @@ export async function loginYouTube(controller, { username = '', email = '', pass
 
   text = textOf(await elements(controller));
   const passwordChallenge = challengeFromText(text);
-  if (passwordChallenge) return { success: false, status: 'checkpointed', reason: passwordChallenge };
+  if (passwordChallenge) {
+    // An authenticator (TOTP) seed lets us clear 2-Step ourselves; other
+    // challenges (captcha, suspicious) still require a human.
+    if (passwordChallenge === 'two_factor' && totpSecret) {
+      await handleYouTubeTwoFactor(controller, totpSecret);
+    } else {
+      return { success: false, status: 'checkpointed', reason: passwordChallenge };
+    }
+  }
 
   const state = await checkYouTubeLoginState(controller);
   return {
