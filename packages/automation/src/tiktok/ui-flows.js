@@ -203,6 +203,13 @@ export async function loginTikTok(
   await activeActor.pause({ meanMs: 4_000, standardDeviationMs: 600, minMs: 2_500, maxMs: 6_000 });
   await dismissPopups(controller, activeActor, 5);
 
+  // Session reuse: TikTok stays signed in on the device, so the device is the
+  // session store (1:1 account↔device). If already logged in, skip the flow.
+  if ((await checkTikTokLoginState(controller, { actor: activeActor })) === 'logged_in') {
+    return { success: true, status: 'active', reason: 'session_reused', twoFactorState: '' };
+  }
+
+  let twoFactorState = '';
   await activeActor.findAndTap(TIKTOK_PROFILE_TEXTS);
   await activeActor.findAndTap(TIKTOK_LOGIN_TEXTS);
   await activeActor.findAndTap(TIKTOK_LOGIN_OPTION_TEXTS);
@@ -216,6 +223,7 @@ export async function loginTikTok(
     if (passwordScreen.status === 'verification_needed') {
       const verificationResult = await handleVerification(activeActor, { emailCodeFetcher, totpSecret });
       if (verificationResult) return verificationResult;
+      twoFactorState = totpSecret ? 'totp' : 'email';
       const postVerificationPasswordScreen = await waitForTikTokPasswordScreen(controller, activeActor);
       if (!postVerificationPasswordScreen.ready) {
         return {
@@ -239,6 +247,7 @@ export async function loginTikTok(
     // handler so a TOTP seed is preferred here, not just the email fallback.
     const verificationResult = await handleVerification(activeActor, { emailCodeFetcher, totpSecret });
     if (verificationResult) return verificationResult;
+    twoFactorState = totpSecret ? 'totp' : 'email';
   }
 
   text = await visibleText(activeActor);
@@ -250,7 +259,8 @@ export async function loginTikTok(
   return {
     success: state === 'logged_in',
     status: state === 'logged_in' ? 'active' : 'checkpointed',
-    reason: state
+    reason: state,
+    twoFactorState
   };
 }
 

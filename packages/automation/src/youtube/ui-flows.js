@@ -161,8 +161,11 @@ export async function loginYouTube(controller, { username = '', email = '', pass
   await dismissPopups(controller);
 
   const initialState = await checkYouTubeLoginState(controller);
-  if (initialState === 'logged_in') return { success: true, status: 'active', reason: '' };
+  if (initialState === 'logged_in') {
+    return { success: true, status: 'active', reason: 'session_reused', twoFactorState: '' };
+  }
 
+  let twoFactorState = '';
   await tapFirst(controller, YOUTUBE_SIGN_IN_TEXTS);
   await tapFirst(controller, YOUTUBE_EMAIL_TEXTS).catch(() => false);
   await typeIntoFirstEditText(controller, identifier);
@@ -185,6 +188,7 @@ export async function loginYouTube(controller, { username = '', email = '', pass
     // challenges (captcha, suspicious) still require a human.
     if (passwordChallenge === 'two_factor' && totpSecret) {
       await handleYouTubeTwoFactor(controller, totpSecret);
+      twoFactorState = 'totp';
     } else {
       return { success: false, status: 'checkpointed', reason: passwordChallenge };
     }
@@ -194,7 +198,8 @@ export async function loginYouTube(controller, { username = '', email = '', pass
   return {
     success: state === 'logged_in',
     status: state === 'logged_in' ? 'active' : 'checkpointed',
-    reason: state
+    reason: state,
+    twoFactorState
   };
 }
 

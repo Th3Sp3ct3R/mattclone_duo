@@ -147,7 +147,8 @@ export async function handleAccountJob(payload) {
           ...(account.session?.toObject?.() || account.session || {}),
           lastLoginDeviceId: leasedDevice._id,
           capturedAt: new Date(),
-          challengeReason: active ? '' : result.reason || ''
+          challengeReason: active ? '' : result.reason || '',
+          twoFactorState: result.twoFactorState ?? account.session?.twoFactorState ?? ''
         },
         'health.lastHealthyAt': active ? new Date() : account.health?.lastHealthyAt || null,
         'health.lastFailureReason': active ? '' : result.reason || '',
