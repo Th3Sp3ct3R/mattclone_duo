@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-next",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@julio/web-next", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@julio/api", "dev"],
+      "port": 4000
+    },
+    {
+      "name": "worker",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@julio/worker", "dev"]
+    },
+    {
+      "name": "mobile",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@julio/mobile", "dev"],
+      "port": 8081
+    }
+  ]
+}

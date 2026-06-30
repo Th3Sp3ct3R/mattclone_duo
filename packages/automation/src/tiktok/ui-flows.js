@@ -6,6 +6,8 @@ import {
   parseUIDump
 } from '@julio/device-control';
 
+import { generateTOTP } from '@julio/integrations';
+
 import { createHumanActor } from '../human-actor.js';
 import {
   TIKTOK_CHANGE_PHOTO_TEXTS,
@@ -103,14 +105,44 @@ function includesAny(text = '', candidates = []) {
   return candidates.some((item) => text.includes(String(item).toLowerCase()));
 }
 
+const VERIFICATION_REJECT_TEXTS = [
+  'incorrect',
+  'invalid',
+  "didn't match",
+  'wrong code',
+  'try again',
+  'code expired',
+  'expired'
+];
+
+async function submitVerificationCode(actor, code) {
+  await typeIntoFirstEditTextHuman(actor, code);
+  await actor.findAndTap(['Continue', 'Verify', 'Submit']);
+  await actor.pause({ meanMs: 5_000, standardDeviationMs: 900, minMs: 3_000, maxMs: 8_000 });
+}
+
 async function handleEmailVerification(actor, emailCodeFetcher) {
   if (!emailCodeFetcher) return { success: false, status: 'checkpointed', reason: 'email_code_required' };
   const code = await emailCodeFetcher.fetchLatestCode();
   if (!code) return { success: false, status: 'checkpointed', reason: 'email_code_not_found' };
-  await typeIntoFirstEditTextHuman(actor, code);
-  await actor.findAndTap(['Continue', 'Verify', 'Submit']);
-  await actor.pause({ meanMs: 5_000, standardDeviationMs: 900, minMs: 3_000, maxMs: 8_000 });
+  await submitVerificationCode(actor, code);
   return null;
+}
+
+// 2FA code entry. Prefers an authenticator (TOTP) seed — works offline, no inbox,
+// unlike the email path. Mirrors instagrowth-saas relogin-fleet.ts: submit the
+// current 30s-window code, and retry once on rejection (covers a window rollover
+// during typing). Falls back to the email-code fetcher when no seed is present.
+export async function handleVerification(actor, { emailCodeFetcher = null, totpSecret = '' } = {}) {
+  if (totpSecret) {
+    await submitVerificationCode(actor, generateTOTP(totpSecret));
+    if (includesAny(await visibleText(actor), VERIFICATION_REJECT_TEXTS)) {
+      await actor.controller?.clearField?.();
+      await submitVerificationCode(actor, generateTOTP(totpSecret));
+    }
+    return null;
+  }
+  return handleEmailVerification(actor, emailCodeFetcher);
 }
 
 async function waitForTikTokPasswordScreen(controller, actor) {
@@ -153,7 +185,7 @@ async function setupProfilePhoto(controller, actor, avatarUrl) {
 
 export async function loginTikTok(
   controller,
-  { username = '', email = '', password = '', emailCodeFetcher = null } = {},
+  { username = '', email = '', password = '', emailCodeFetcher = null, totpSecret = '' } = {},
   { actor = null } = {}
 ) {
   const identifier = String(email || username || '').trim();
@@ -171,6 +203,13 @@ export async function loginTikTok(
   await activeActor.pause({ meanMs: 4_000, standardDeviationMs: 600, minMs: 2_500, maxMs: 6_000 });
   await dismissPopups(controller, activeActor, 5);
 
+  // Session reuse: TikTok stays signed in on the device, so the device is the
+  // session store (1:1 account↔device). If already logged in, skip the flow.
+  if ((await checkTikTokLoginState(controller, { actor: activeActor })) === 'logged_in') {
+    return { success: true, status: 'active', reason: 'session_reused', twoFactorState: '' };
+  }
+
+  let twoFactorState = '';
   await activeActor.findAndTap(TIKTOK_PROFILE_TEXTS);
   await activeActor.findAndTap(TIKTOK_LOGIN_TEXTS);
   await activeActor.findAndTap(TIKTOK_LOGIN_OPTION_TEXTS);
@@ -182,8 +221,9 @@ export async function loginTikTok(
   const passwordScreen = await waitForTikTokPasswordScreen(controller, activeActor);
   if (!passwordScreen.ready) {
     if (passwordScreen.status === 'verification_needed') {
-      const verificationResult = await handleEmailVerification(activeActor, emailCodeFetcher);
+      const verificationResult = await handleVerification(activeActor, { emailCodeFetcher, totpSecret });
       if (verificationResult) return verificationResult;
+      twoFactorState = totpSecret ? 'totp' : 'email';
       const postVerificationPasswordScreen = await waitForTikTokPasswordScreen(controller, activeActor);
       if (!postVerificationPasswordScreen.ready) {
         return {
@@ -203,8 +243,11 @@ export async function loginTikTok(
 
   let text = await visibleText(activeActor);
   if (includesAny(text, TIKTOK_VERIFICATION_TEXTS)) {
-    const verificationResult = await handleEmailVerification(activeActor, emailCodeFetcher);
+    // Post-password 2FA prompt — the authenticator (TOTP) step. Use the unified
+    // handler so a TOTP seed is preferred here, not just the email fallback.
+    const verificationResult = await handleVerification(activeActor, { emailCodeFetcher, totpSecret });
     if (verificationResult) return verificationResult;
+    twoFactorState = totpSecret ? 'totp' : 'email';
   }
 
   text = await visibleText(activeActor);
@@ -216,7 +259,8 @@ export async function loginTikTok(
   return {
     success: state === 'logged_in',
     status: state === 'logged_in' ? 'active' : 'checkpointed',
-    reason: state
+    reason: state,
+    twoFactorState
   };
 }
 

@@ -54,6 +54,9 @@ function listFromResponse(response = {}) {
 }
 
 function packageNameOf(app = {}) {
+  // DuoPlus returns installed apps as an array of plain package-name strings;
+  // other providers return objects. Handle both.
+  if (typeof app === 'string') return app.trim();
   return String(app.packageName || app.package || app.package_name || app.pkg || app.bundle_id || '').trim();
 }
 

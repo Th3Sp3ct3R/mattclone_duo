@@ -23,6 +23,13 @@ export const YOUTUBE_POST_TEXTS = ['Upload Short', 'Upload', 'Publish'];
 export const YOUTUBE_TWO_FACTOR_TEXTS = ['2-Step Verification', 'two-step verification', 'Verify it’s you'];
 export const YOUTUBE_CAPTCHA_TEXTS = ['captcha', 'not a robot'];
 export const YOUTUBE_SUSPICIOUS_TEXTS = ['suspicious', 'unusual activity', 'couldn’t sign you in'];
+export const YOUTUBE_TRY_ANOTHER_WAY_TEXTS = ['Try another way', 'More ways to verify'];
+export const YOUTUBE_AUTHENTICATOR_TEXTS = [
+  'Google Authenticator',
+  'authenticator app',
+  'verification code from'
+];
+export const YOUTUBE_CODE_REJECT_TEXTS = ['wrong code', 'try again', 'incorrect', "didn't work"];
 
 export const YOUTUBE_CREATE_FALLBACK_POINT = { x: 360, y: 1_185 };
 export const YOUTUBE_NEWEST_MEDIA_FALLBACK_POINT = { x: 115, y: 330 };
