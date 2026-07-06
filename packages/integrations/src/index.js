@@ -4,3 +4,4 @@ export { DjekxaImporter, parseCredentialFile } from './djekxa-importer.js';
 export { LlmClient, createOpenRouterClient } from './llm-client.js';
 export { EmailCodeFetcher, extractVerificationCode } from './email-code.js';
 export { buildProxyUrl, verifyProxy } from './proxy-check.js';
+export { generateTOTP, totpCandidates, base32Decode } from './totp.js';

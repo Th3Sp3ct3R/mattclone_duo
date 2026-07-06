@@ -7,6 +7,7 @@ function credentialsFrom(account = {}, opts = {}) {
     username: account.credentials?.username,
     email: account.credentials?.email,
     password: account.credentials?.password,
+    totpSecret: account.credentials?.totpSecret,
     emailCodeFetcher: opts.emailCodeFetcher
   };
 }
