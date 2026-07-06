@@ -6,6 +6,7 @@ import { logger } from '@julio/api/logger';
 
 import { createV1Router } from '@julio/api/routes/v1/index';
 import { createHealthRouter } from '@julio/api/routes/health';
+import { createDeviceControlCompatRouter } from '@julio/api/routes/device-control-compat';
 
 export function createApiApp() {
   const app = express();
@@ -21,6 +22,7 @@ export function createApiApp() {
   app.use(express.urlencoded({ extended: true }));
 
   app.use('/api/health', createHealthRouter());
+  app.use('/api', createDeviceControlCompatRouter());
   app.use('/api/v1', createV1Router());
 
   app.use((err, req, res, next) => {
