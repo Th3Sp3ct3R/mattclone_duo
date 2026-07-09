@@ -1779,3 +1779,111 @@ html {
   background: color-mix(in srgb, var(--ui-fg) 30%, transparent);
 }
 
+/* Live control (Path C — RedFinger BgsSdk WebRTC surface) */
+.LiveControl {
+  display: grid;
+  gap: var(--ui-space-medium);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: color-mix(in srgb, var(--ui-bg) 96%, var(--ui-fg));
+  padding: var(--ui-space-medium);
+}
+
+.LiveControl__bar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--ui-space-small);
+}
+
+.LiveControl__title h3 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.LiveControl__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-small);
+  flex-wrap: wrap;
+}
+
+.LiveControl__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ui-muted);
+}
+
+.LiveControl__status--streaming .FocusMode__dot {
+  background: var(--ui-mint);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-mint) 22%, transparent);
+}
+
+.LiveControl__status--connecting .FocusMode__dot {
+  background: var(--ui-amber, #e0a63a);
+}
+
+.LiveControl__status--error .FocusMode__dot {
+  background: var(--ui-danger, #d3453b);
+}
+
+.LiveControl__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 70vh;
+  margin-inline: auto;
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  background: #05070a;
+}
+
+.LiveControl__view,
+.LiveControl__view :is(video, canvas) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.LiveControl__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+  color: var(--ui-muted);
+  background: color-mix(in srgb, #05070a 70%, transparent);
+}
+
+.LiveControl__overlay--error {
+  color: var(--ui-danger, #d3453b);
+}
+
+.LiveControl__glyph {
+  font-size: 28px;
+  opacity: 0.8;
+}
+
+.LiveControl__input {
+  display: flex;
+  gap: var(--ui-space-small);
+}
+
+.LiveControl__input input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-input);
+  color: var(--ui-fg);
+}
+

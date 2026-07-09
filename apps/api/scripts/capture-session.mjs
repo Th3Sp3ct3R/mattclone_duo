@@ -137,11 +137,23 @@ async function main() {
   if (!tab || !tab.webSocketDebuggerUrl) {
     tab = await cdpGet(`/json/new?${encodeURIComponent(cfg.url)}`).catch(() => null); // older Chrome
   }
+  let closeCreatedTab = true;
   if (!tab || !tab.webSocketDebuggerUrl) {
-    throw new Error('Could not open a capture tab — is Chrome running with --remote-debugging-port?');
+    const tabs = await cdpGet('/json/list').catch(() => []);
+    tab = Array.isArray(tabs)
+      ? tabs.find((t) => t.type === 'page' && t.webSocketDebuggerUrl)
+      : null;
+    closeCreatedTab = false;
+    if (tab?.webSocketDebuggerUrl) {
+      console.log('  ↪ using existing CDP page target');
+    }
+  }
+  if (!tab || !tab.webSocketDebuggerUrl) {
+    throw new Error('Could not open or find a capture tab — is Chrome/Electron running with --remote-debugging-port?');
   }
   const createdTabId = tab.id;
   const closeTab = async () => {
+    if (!closeCreatedTab) return;
     await cdpPut(`/json/close/${createdTabId}`).catch(() => cdpGet(`/json/close/${createdTabId}`).catch(() => {}));
   };
   const ws = new WebSocket(tab.webSocketDebuggerUrl, { maxPayload: 50 * 1024 * 1024 });

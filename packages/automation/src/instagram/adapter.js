@@ -11,7 +11,9 @@ function credentialsFrom(account = {}, opts = {}) {
     username: account.credentials?.username,
     email: account.credentials?.email,
     password: account.credentials?.password,
-    emailCodeFetcher: opts.emailCodeFetcher
+    emailCodeFetcher: opts.emailCodeFetcher,
+    session: account.session,
+    preferExistingSession: opts.preferExistingSession !== false
   };
 }
 

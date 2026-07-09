@@ -4,6 +4,9 @@ describe('buildLoginFlowRows', () => {
   const fpDevice = {
     _id: 'device-fppu2',
     provider: 'duoplus',
+    tier: 'ios',
+    tierDisplay: 'iOS',
+    providerDisplay: 'iPhone',
     providerDeviceId: '10001',
     name: 'FpPU2',
     status: 'running',
@@ -21,7 +24,8 @@ describe('buildLoginFlowRows', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       deviceName: 'FpPU2',
-      provider: 'duoplus',
+      tier: 'ios',
+      tierDisplay: 'iOS',
       proxyLabel: '203.0.113.10',
       loginStage: 'active',
       fallbackAvailable: true,

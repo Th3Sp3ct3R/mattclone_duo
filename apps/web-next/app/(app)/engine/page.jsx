@@ -151,11 +151,11 @@ export default function EnginePage() {
   }
 
   async function syncDevices() {
-    await runAction('devices:sync:vmos', () => api.engine.syncDevices('vmos'), 'VMOS devices synced');
+    await runAction('devices:sync:vmos', () => api.engine.syncDevices('vmos'), 'Android pool synced');
   }
 
   async function syncDuoPlusDevices() {
-    await runAction('devices:sync:duoplus', () => api.engine.syncDevices('duoplus'), 'DuoPlus devices synced');
+    await runAction('devices:sync:duoplus', () => api.engine.syncDevices('duoplus'), 'iPhone pool synced');
   }
 
   async function refreshDeviceStatus(device) {
@@ -168,6 +168,16 @@ export default function EnginePage() {
 
   async function loadDeviceFocus(device, quality = {}) {
     return api.engine.getDeviceFocus(device._id, quality);
+  }
+
+  // Path C native live control: broker the ARMVM/RedFinger handshake. `uuid` is
+  // generated inside LiveControl and must key connectTokenShared server-side.
+  async function connectLiveControl(device, uuid) {
+    return api.engine.connectLiveControl(device._id, { uuid });
+  }
+
+  async function sendLiveHeartbeat(device, type) {
+    return api.engine.liveHeartbeat(device._id, type);
   }
 
   async function fetchDuoPlusFrames() {
@@ -314,6 +324,8 @@ export default function EnginePage() {
         onPoll={() => loadEngine({ showSpinner: false })}
         fetchFrames={fetchDuoPlusFrames}
         loadDeviceFocus={loadDeviceFocus}
+        connectLiveControl={connectLiveControl}
+        sendLiveHeartbeat={sendLiveHeartbeat}
         assignAccountDevice={assignAccountDevice}
         unassignAccountDevice={unassignAccountDevice}
         onboardAccount={onboardAccount}

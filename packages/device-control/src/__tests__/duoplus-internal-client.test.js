@@ -57,6 +57,57 @@ test('normalizeCaptures drops items without image_id and handles empty capture',
   expect(out).toEqual([{ imageId: 'A', status: NaN, linkStatus: NaN, dataUrl: '', message: '' }]);
 });
 
+test('startCheck posts image_id (pre-flight, no boot)', async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), body: JSON.parse(init.body) });
+    return { ok: true, status: 200, text: async () => '{"code":200,"data":{"route_list":[],"video_stream_support":true}}' };
+  };
+  const client = new DuoplusInternalClient({ token: 't', minDelayMs: 0, fetchImpl });
+  await client.startCheck('BzSfu');
+  expect(calls[0].url).toBe('https://api.duoplus.cn/image/startCheck');
+  expect(calls[0].body).toEqual({ image_id: 'BzSfu' });
+});
+
+test('start posts fixed_type (default 1, overridable)', async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), body: JSON.parse(init.body) });
+    return { ok: true, status: 200, text: async () => '{"code":200,"data":{"deduction_type":2}}' };
+  };
+  const client = new DuoplusInternalClient({ token: 't', minDelayMs: 0, fetchImpl });
+  await client.start('BzSfu');
+  await client.start('BzSfu', { fixedType: 2 });
+  expect(calls[0].body).toEqual({ image_id: 'BzSfu', fixed_type: 1 });
+  expect(calls[1].body).toEqual({ image_id: 'BzSfu', fixed_type: 2 });
+});
+
+test('connectTokenShared posts image_ids + uuid and requires a uuid', async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), body: JSON.parse(init.body) });
+    return { ok: true, status: 200, text: async () => '{"code":200,"data":{"serverToken":"stok"}}' };
+  };
+  const client = new DuoplusInternalClient({ token: 't', minDelayMs: 0, fetchImpl });
+  await client.connectTokenShared('BzSfu', 'uuid-123');
+  expect(calls[0].url).toBe('https://api.duoplus.cn/image/connectTokenShared');
+  expect(calls[0].body).toEqual({ image_ids: ['BzSfu'], uuid: 'uuid-123' });
+  expect(() => client.connectTokenShared(['BzSfu'])).toThrow(/uuid/i);
+});
+
+test('heartbeat posts image_id + type (default 1)', async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), body: JSON.parse(init.body) });
+    return { ok: true, status: 200, text: async () => '{"code":200,"data":{}}' };
+  };
+  const client = new DuoplusInternalClient({ token: 't', minDelayMs: 0, fetchImpl });
+  await client.heartbeat('BzSfu');
+  await client.heartbeat('BzSfu', 3);
+  expect(calls[0].body).toEqual({ image_id: 'BzSfu', type: 1 });
+  expect(calls[1].body).toEqual({ image_id: 'BzSfu', type: 3 });
+});
+
 test('throws DUOPLUS_SESSION_EXPIRED on 401', async () => {
   const fetchImpl = async () => ({ ok: false, status: 401, text: async () => '{"code":401,"message":"re-login"}' });
   const client = new DuoplusInternalClient({ token: 't', minDelayMs: 0, fetchImpl });

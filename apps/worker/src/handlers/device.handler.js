@@ -10,6 +10,11 @@ import { PreflightError, runJobPreflight } from './preflight.js';
 const TIKTOK_PACKAGE = 'com.zhiliaoapp.musically';
 const INSTAGRAM_PACKAGE = 'com.instagram.android';
 const YOUTUBE_PACKAGE = 'com.google.android.youtube';
+const SUNO_PACKAGE = 'com.suno.android';
+
+function shellQuote(value = '') {
+  return `'${String(value || '').replace(/'/g, "'\\''")}'`;
+}
 
 async function getProxyForDevice(deviceId) {
   const assignment = await EngineProxyAssignment.findOne({ deviceId, deactivatedAt: null }).sort({ assignedAt: -1 });
@@ -17,13 +22,70 @@ async function getProxyForDevice(deviceId) {
   return EngineProxy.findById(assignment.proxyId);
 }
 
+async function installSunoPackage({ controller }) {
+  const sourceUrl = String(env.apkUrls.suno || '').trim();
+  if (!sourceUrl) return { platform: 'suno', installed: false, skipped: true, reason: 'missing_suno_xapk_url' };
+
+  const sourcePath = sourceUrl.split('?')[0] || sourceUrl;
+  const fileName = sourcePath.split('/').filter(Boolean).pop() || 'suno.apk';
+  const lowerName = fileName.toLowerCase();
+  const stageDir = '/sdcard/Download/suno-install';
+  const archivePath = `${stageDir}/${fileName}`;
+  const shellUrl = shellQuote(sourceUrl);
+  const shellArchive = shellQuote(archivePath);
+  const shellStageDir = shellQuote(stageDir);
+
+  await controller.shell(`mkdir -p ${shellStageDir}`);
+  await controller
+    .shell(`toybox wget -O ${shellArchive} ${shellUrl} || curl -L -o ${shellArchive} ${shellUrl}`)
+    .catch(() => '');
+
+  let installCommand = '';
+  if (lowerName.endsWith('.xapk') || lowerName.endsWith('.apks') || lowerName.endsWith('.zip')) {
+    const unpackDir = `${stageDir}/unpacked`;
+    const shellUnpackDir = shellQuote(unpackDir);
+    await controller.shell(`rm -rf ${shellUnpackDir} && mkdir -p ${shellUnpackDir}`);
+    await controller
+      .shell(`toybox unzip -o ${shellArchive} -d ${shellUnpackDir} || unzip -o ${shellArchive} -d ${shellUnpackDir}`)
+      .catch(() => '');
+    const apkListing = await controller
+      .shell(`find ${shellUnpackDir} -name '*.apk' | sort`)
+      .catch(() => '');
+    const apkPaths = String(apkListing || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (apkPaths.length) {
+      const quotedApks = apkPaths.map((apkPath) => shellQuote(apkPath)).join(' ');
+      installCommand = `pm install-multiple -r -g ${quotedApks} || pm install-multiple ${quotedApks}`;
+    }
+  } else {
+    installCommand = `pm install -r -g ${shellArchive} || pm install -r ${shellArchive}`;
+  }
+
+  if (installCommand) {
+    await controller.shell(installCommand).catch(() => '');
+  }
+
+  const installed = await controller.shell(`pm path ${shellQuote(SUNO_PACKAGE)}`).catch(() => '');
+  return {
+    platform: 'suno',
+    packageName: SUNO_PACKAGE,
+    installed: String(installed || '').includes('package:'),
+    sourceUrl,
+    fileName,
+    archivePath
+  };
+}
+
 // DuoPlus: install from the DuoPlus-hosted app catalog (/app/platformList -> /app/install).
 // No APK hosting or ADB push needed.
-async function provisionDuoPlusApps({ provider, device }) {
+async function provisionDuoPlusApps({ provider, device, controller }) {
   const appNames = env.duoplusAppSet || [];
-  if (!appNames.length) return { provider: 'duoplus', appNames: [], installed: [], missing: [] };
+  const suno = await installSunoPackage({ controller });
+  if (!appNames.length) return { provider: 'duoplus', appNames: [], installed: [], missing: [], suno };
   const result = await provider.provisionApps(device.providerDeviceId, { appNames });
-  return { provider: 'duoplus', appNames, ...result };
+  return { provider: 'duoplus', appNames, suno, ...result };
 }
 
 // VMOS: push APK by URL + auto-install.
@@ -52,7 +114,7 @@ async function provisionVmosApps({ provider, device, controller }) {
 }
 
 function provisionApps({ provider, device, controller }) {
-  if (device.provider === 'duoplus') return provisionDuoPlusApps({ provider, device });
+  if (device.provider === 'duoplus') return provisionDuoPlusApps({ provider, device, controller });
   return provisionVmosApps({ provider, device, controller });
 }
 

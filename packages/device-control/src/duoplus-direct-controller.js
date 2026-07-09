@@ -83,7 +83,7 @@ export class DuoplusDirectController {
   }
 
   inputText(text) {
-    return this.shell(`input text ${String(text || '').replace(/\s/g, '%s')}`);
+    return this.shell(`input text '${shellEscape(String(text || '').replace(/\s/g, '%s'))}'`);
   }
 
   type(text) {
@@ -103,9 +103,14 @@ export class DuoplusDirectController {
   }
 
   async getUIDump() {
-    await this.shell('DuoPlusDumpUI /sdcard/uidump.xml').catch(() => '');
+    const directDump = await this.shell('DuoPlusDumpUI /sdcard/uidump.xml').catch(() => '');
+    if (String(directDump || '').includes('<hierarchy')) return directDump;
     await delay(this.pollIntervalMs);
-    return this.shell('cat /sdcard/uidump.xml').catch(() => '');
+    const fileDump = await this.shell('cat /sdcard/uidump.xml').catch(() => '');
+    if (String(fileDump || '').includes('<hierarchy')) return fileDump;
+    await this.shell('uiautomator dump /sdcard/_julio_ui.xml 2>/dev/null').catch(() => '');
+    await delay(this.pollIntervalMs);
+    return this.shell('cat /sdcard/_julio_ui.xml').catch(() => '');
   }
 
   async getCurrentPackage() {
@@ -148,7 +153,9 @@ export class DuoplusDirectController {
     if (!Array.isArray(steps) || !steps.length) return Promise.resolve('');
     const commands = steps
       .map((step) => {
-        if (step.type === 'text' && step.value) return `input text ${String(step.value).replace(/\s/g, '%s')}`;
+        if (step.type === 'text' && step.value) {
+          return `input text '${shellEscape(String(step.value).replace(/\s/g, '%s'))}'`;
+        }
         if (step.type === 'key' && step.code) return `input keyevent ${Number(step.code)}`;
         if (step.type === 'sleep') return sleepCommand(step.ms);
         return '';

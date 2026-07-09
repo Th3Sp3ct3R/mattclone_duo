@@ -1,11 +1,13 @@
 import { Router } from 'express';
 
 import {
+  connectDuoPlusLiveControl,
   createDevice,
   enqueueDeviceAction,
   getDeviceFocus,
   getDeviceStatus,
   getDuoPlusFrames,
+  heartbeatDuoPlusLiveControl,
   initDuoPlusProxy,
   listDevices,
   syncDevices,
@@ -86,6 +88,8 @@ export function createEngineRouter() {
   router.put('/devices/:id', updateDevice);
   router.get('/devices/:id/status', getDeviceStatus);
   router.get('/devices/:id/focus', getDeviceFocus);
+  router.post('/devices/:id/live/connect', connectDuoPlusLiveControl);
+  router.post('/devices/:id/live/heartbeat', heartbeatDuoPlusLiveControl);
   router.post('/devices/:id/proxy/init', initDuoPlusProxy);
   router.get('/devices/:id/events', listDeviceEvents);
   router.get('/devices/:id/events/stream', streamDeviceEvents);

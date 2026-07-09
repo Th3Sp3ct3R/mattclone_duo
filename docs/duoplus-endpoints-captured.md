@@ -116,6 +116,66 @@ opens a **WebRTC** session (UDP via `mobnow.net` edge, or TCP fallback to
 WebRTC, so it never shows up as an HTTP/WS request — that's why the wall is
 screenshots but the control view is crisp full-res.
 
+### 3b. The web SDK that consumes the token — RedFinger `BgsSdk`
+
+*(Captured live 2026-07-09 via CDP against the logged-in console.)*
+
+DuoPlus's `/control` page loads **`https://my.duoplus.cn/BgsSdk.min.1.54.0.dp.js`**
+(v1.54.0, self-hosted, ~1.1 MB). Its internals call a `redfinger.*` namespace, so
+the "ARMVM" control stack is really **RedFinger's cloud-phone SDK** (vendor: Hunan
+MC Technology) riding on **ByteDance VeRTC**, with a `PeerGW`/`P2p` fallback
+transport. Public SDK docs are not indexed — the bundle is the source of truth.
+Globals: `BgsSdk` (control API), `MultiSdk` (multi-phone), `Player`/`MP4Player`/`myplayer`
+(WebGL video render), `BgsReport` (telemetry).
+
+**Full runtime sequence** (what the browser actually does):
+
+```
+1. POST /image/startCheck   {image_id}                → route_list + video_stream_support
+2. POST /image/start        {image_id, fixed_type:1}  → lease (need_waiting, deduction_type, duration_seconds)
+3. POST /image/connect      {image_id}                → resultInfo (control gateway,
+                                                          merchantInfo{appkey,appSecret}, sessionId, padCode)
+4. (client generates a uuid)
+   POST /image/connectTokenShared {image_ids:[id], uuid}  → serverToken   ← the key output
+5. BgsSdk.initPhone({ appId, onlineTime, viewId, width, height, bitrate, fps,
+                      isWebRtc, encryptType, instanceCode, callbacks })   (sceneType = CLOUD_PHONE)
+6. POST https://oversea-platform.armvm.com/sdk/instance/cloud-phone-connect
+        ?serverToken=<serverToken>&auth_ver=3&nonce=<Date.now()>
+        body: { uuid, clientToken: BgsSdk.getClientToken() }   → media/VeRTC params
+7. BgsSdk.startPhone(serverToken)  → VeRTC stream + control datachannel bound to <video>
+8. POST /image/heartbeat {image_id, type:1|3}   (keepalive)
+```
+
+Two corrections to the §3 capture above:
+
+- **`connectTokenShared` is the `serverToken` source.** `connect` alone returns only
+  `resultInfo`; the token `startPhone` consumes comes from `connectTokenShared`, keyed
+  to a **client-generated `uuid`**.
+- **`clientToken` is minted in the browser** by `BgsSdk.getClientToken()` =
+  `rand8 + base64("uuid,2,version,platform,browserType,browserVersion,appId,timestamp")`
+  — it must run client-side, not on the server.
+
+**`initPhone` params** (validated by `redfinger.checkParam`): `appId` (from
+`merchantInfo.appkey`), `onlineTime`, `viewId` (DOM element hosting the video),
+`width`, `height`, `bitrate`, `fps`, `isWebRtc`, `encryptType`, `instanceCode`
+(= padCode), plus optional `packageName`, `openApiHost`, `connectPhoneUrl`,
+`reportUrl`, `isReport`, and `callbacks` (`onInitSuccess/Fail`,
+`onConnectSuccess/Fail`, `onStoped`). `startPhone(serverToken)` takes the single
+serverToken string.
+
+**Control verbs** (all on `BgsSdk`): `sendCommand`, `sendInputString`,
+`sendInputClipper`, `keyCtrlEdit`, `setPhoneRotation`, `setGPS`,
+`changeResolution`, `setStreamConfig`, `setupVideoQuality`, `switchKeyboard`,
+`audioPauseOrResume`, `sendTransparentMsg`.
+
+**Our client** ([duoplus-internal-client.js](../packages/device-control/src/duoplus-internal-client.js))
+now implements steps 1–4 + heartbeat (`startCheck`, `start`, `connect`,
+`connectTokenShared`, `heartbeat`). Remaining for live control (Path C): self-host
+`BgsSdk.min.1.54.0.dp.js` and add a `LiveControl` component that runs
+`initPhone → startPhone` and forwards input to `sendCommand`/`sendInputString`.
+No ArmCloud AK/SK is needed — the brokered DuoPlus `merchantInfo` + `serverToken`
+carry the whole session.
+
 ---
 
 ## 4. Integration paths for our UI

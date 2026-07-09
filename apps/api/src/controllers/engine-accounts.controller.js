@@ -16,15 +16,52 @@ async function ensureDb() {
 }
 
 function sanitizeAccount(payload = {}) {
+  const hasSecretRefs = Object.prototype.hasOwnProperty.call(payload, 'secretRefs');
+  const hasSecretRefsInCredentials = Object.prototype.hasOwnProperty.call(payload, 'credentials') &&
+    payload.credentials &&
+    typeof payload.credentials === 'object' &&
+    Object.prototype.hasOwnProperty.call(payload.credentials, 'secretRefs');
+  const hasSession = Object.prototype.hasOwnProperty.call(payload, 'session');
+  const hasSessionCookies = Object.prototype.hasOwnProperty.call(payload, 'sessionCookies');
+  const secretRefsInput = hasSecretRefs
+    ? payload.secretRefs
+    : hasSecretRefsInCredentials
+      ? payload.credentials.secretRefs
+      : {};
+  const safeSecretRefs = hasSecretRefs || hasSecretRefsInCredentials ? {
+    password: String(secretRefsInput.password || '').trim(),
+    emailPassword: String(secretRefsInput.emailPassword || '').trim(),
+    totp: String(secretRefsInput.totp || '').trim()
+  } : undefined;
+
+  const sessionInput = hasSession
+    ? payload.session || {}
+    : hasSessionCookies
+      ? payload.sessionCookies || {}
+      : undefined;
+  const safeSessionCookies =
+    sessionInput && typeof sessionInput === 'object' && !Array.isArray(sessionInput)
+      ? typeof sessionInput.cookies === 'object' && sessionInput.cookies
+        ? sessionInput.cookies
+        : {}
+      : {};
+  const sessionPayload = hasSession || hasSessionCookies
+    ? { ...(sessionInput || {}), cookies: safeSessionCookies }
+    : undefined;
+
+  const credentials = {
+    username: String(payload.username || payload.credentials?.username || '').trim(),
+    password: String(payload.password || payload.credentials?.password || '').trim(),
+    email: String(payload.email || payload.credentials?.email || '').trim().toLowerCase(),
+    emailPassword: String(payload.emailPassword || payload.credentials?.emailPassword || '').trim()
+  };
+  if (safeSecretRefs) credentials.secretRefs = safeSecretRefs;
+
   return {
     platform: String(payload.platform || '').trim(),
     status: String(payload.status || 'new').trim(),
-    credentials: {
-      username: String(payload.username || payload.credentials?.username || '').trim(),
-      password: String(payload.password || payload.credentials?.password || '').trim(),
-      email: String(payload.email || payload.credentials?.email || '').trim().toLowerCase(),
-      emailPassword: String(payload.emailPassword || payload.credentials?.emailPassword || '').trim()
-    },
+    credentials,
+    ...(sessionPayload ? { session: sessionPayload } : {}),
     profile: {
       displayName: String(payload.displayName || payload.profile?.displayName || '').trim(),
       bio: String(payload.bio || payload.profile?.bio || '').trim(),

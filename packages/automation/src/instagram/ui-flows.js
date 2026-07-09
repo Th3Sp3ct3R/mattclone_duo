@@ -71,8 +71,32 @@ export async function checkInstagramLoginState(controller) {
   return 'unknown';
 }
 
-export async function loginInstagram(controller, { username = '', password = '', emailCodeFetcher = null } = {}) {
-  if (!username || !password) throw new Error('Instagram credentials are required');
+export async function loginInstagram(
+  controller,
+  { username = '', password = '', emailCodeFetcher = null, session = null, preferExistingSession = true } = {}
+) {
+  if (!username) throw new Error('Instagram credentials are required');
+  if (preferExistingSession) {
+    const hasSession = session?.cookies || session?.tokens || session?.cookie;
+    if (hasSession) {
+      const state = await checkInstagramLoginState(controller);
+      if (state === 'logged_in') return { success: true, status: 'active', reason: 'session_reused' };
+    }
+  }
+  if (!password) {
+    if (session?.cookies || session?.tokens || session?.token || session?.cookie) {
+      return {
+        success: false,
+        status: 'checkpointed',
+        reason: 'session_cookie_probe_failed'
+      };
+    }
+    return {
+      success: false,
+      status: 'missing_credentials',
+      reason: 'missing_password'
+    };
+  }
   await controller.stopApp(INSTAGRAM_PACKAGE).catch(() => {});
   await controller.startApp(INSTAGRAM_PACKAGE, INSTAGRAM_LAUNCHER_ACTIVITY);
   await delay(4_000);

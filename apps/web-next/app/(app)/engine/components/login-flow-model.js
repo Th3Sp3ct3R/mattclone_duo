@@ -12,10 +12,10 @@ function accountName(account) {
 }
 
 function deviceName(device) {
-  if (device.provider === 'duoplus' && device.providerDeviceId && device.name === `snap_${device.providerDeviceId}`) {
+  if (device.tier === 'ios' && device.providerDeviceId && device.name === `snap_${device.providerDeviceId}`) {
     return device.providerDeviceId;
   }
-  return device.name || device.providerDeviceId || idOf(device);
+  return device.displayLabel || device.name || device.providerDeviceId || idOf(device);
 }
 
 function proxyState(device) {
@@ -31,12 +31,12 @@ function proxyState(device) {
     };
   }
 
-  if (device.provider === 'duoplus') {
+  if (device.tier === 'ios') {
     const configured = Boolean(device.providerMeta?.proxyConfigured);
     return {
       proxyLabel: configured ? device.providerMeta?.proxyIp || 'configured' : 'No proxy',
       proxyTone: configured ? 'configured' : 'missing',
-      proxyProtocol: configured ? 'duoplus' : ''
+      proxyProtocol: 'proxy'
     };
   }
 
@@ -60,10 +60,10 @@ function stageState(account, latestEvent) {
 }
 
 function sortRows(a, b) {
-  const providerRank = (row) => (row.provider === 'duoplus' ? 0 : 1);
+  const tierRank = (row) => (row.tier === 'ios' ? 0 : 1);
   const statusRank = (row) => (row.deviceStatus === 'running' ? 0 : 1);
   return (
-    providerRank(a) - providerRank(b) ||
+    tierRank(a) - tierRank(b) ||
     statusRank(a) - statusRank(b) ||
     a.deviceName.localeCompare(b.deviceName)
   );
@@ -94,7 +94,9 @@ export function buildLoginFlowRows({ devices = [], accounts = [] } = {}) {
         deviceId: idOf(device),
         accountId: idOf(account),
         deviceName: deviceName(device),
-        provider: device.provider || 'vmos',
+        tier: device.tier || 'android',
+        tierDisplay: device.tierDisplay || 'Android OS',
+        providerDisplay: device.providerDisplay || 'Android',
         providerDeviceId: device.providerDeviceId || '',
         deviceStatus: device.status || 'unknown',
         accountLabel: accountName(account),
@@ -106,7 +108,7 @@ export function buildLoginFlowRows({ devices = [], accounts = [] } = {}) {
         failureReason:
           account?.health?.lastFailureReason ||
           (latestEvent?.level === 'error' ? latestEvent.message : ''),
-        fallbackAvailable: device.provider === 'duoplus',
+        fallbackAvailable: device.tier === 'ios',
         screenshotUrl: device.runtime?.lastScreenshotUrl || '',
         ...proxy,
         ...stage

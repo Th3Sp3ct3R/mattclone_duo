@@ -80,7 +80,9 @@ export async function enqueueAccountOnboarding({
 } = {}) {
   const account = await EngineAccount.findById(accountId);
   if (!account) throw new Error('Account not found');
-  if (account.platform !== 'tiktok') throw new Error('TikTok onboarding is required for this workflow');
+  if (!['tiktok', 'instagram'].includes(String(account.platform || '').trim())) {
+    throw new Error('onboarding supports TikTok and Instagram accounts only');
+  }
   if (!account.assignedDeviceId) throw new Error('Account has no assigned device');
 
   const deviceId = account.assignedDeviceId;

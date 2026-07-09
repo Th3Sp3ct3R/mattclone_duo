@@ -3,6 +3,12 @@ import { VmosDirectController } from './vmos-direct-controller.js';
 import { DuoplusClient, listFromDuoPlusResponse, resolveDuoPlusAppIds } from './duoplus-client.js';
 import { DuoplusDirectController } from './duoplus-direct-controller.js';
 import { DeviceControlError } from './errors.js';
+import {
+  wrapDuoplusClientForCapture,
+  createNdjsonFileSink,
+  createStdoutSink,
+  compositeSink
+} from './duoplus-traffic-capture.js';
 
 function listFromInstanceResponse(result = {}) {
   const data = result.data || result;
@@ -199,8 +205,25 @@ export function createCloudPhoneProvider({ type = 'vmos', ...config } = {}) {
   }
 
   if (type === 'duoplus') {
+    const duoplusClient = new DuoplusClient(config);
+
+    // Opt-in traffic capture (set CAPTURE_DUOPLUS_TRAFFIC=1). One-line wiring
+    // so engineers don't have to remember to import the wrapper. Off in prod.
+    if (process.env.CAPTURE_DUOPLUS_TRAFFIC === '1') {
+      const sinkPath = process.env.DUOPLUS_CAPTURE_PATH
+        || `./logs/duoplus-traffic-${new Date().toISOString().replace(/[:.]/g, '-')}.ndjson`;
+      const source = process.env.DUOPLUS_CAPTURE_SOURCE || 'mattclone-duo-worker';
+      wrapDuoplusClientForCapture(duoplusClient, {
+        sink: compositeSink(
+          createNdjsonFileSink(sinkPath),
+          process.env.DUOPLUS_CAPTURE_STDOUT === '1' ? createStdoutSink() : null
+        ),
+        source
+      });
+    }
+
     return new DuoplusCloudPhoneProvider({
-      client: new DuoplusClient(config)
+      client: duoplusClient
     });
   }
 

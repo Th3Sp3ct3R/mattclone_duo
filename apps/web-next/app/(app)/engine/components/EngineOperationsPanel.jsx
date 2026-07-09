@@ -7,8 +7,12 @@ import { Button, Card, DataTable, Input } from '@julio/ui';
 import { AccountCreateForm } from './AccountCreateForm.jsx';
 import { AssignDeviceDialog } from './AssignDeviceDialog.jsx';
 import { DeviceLogsDialog } from './DeviceLogsDialog.jsx';
-import { DuoPlusFocusMode } from './DuoPlusFocusMode.jsx';
+// File kept under old name internally to avoid touching SCSS class hooks; in
+// JSX we render it as <FocusMode/> so the supplier name doesn't appear in the
+// generated DOM or React tree name.
+import { DuoPlusFocusMode as FocusMode } from './DuoPlusFocusMode.jsx';
 import { EngineSelect } from './EngineSelect.jsx';
+import { LiveControl } from './LiveControl.jsx';
 import { OnboardDialog } from './OnboardDialog.jsx';
 import { accountDeviceOption } from './device-account-eligibility.js';
 import { buildLoginFlowRows } from './login-flow-model.js';
@@ -52,15 +56,19 @@ function statusCell(info) {
 }
 
 function providerCell(info) {
-  const value = info.getValue() || 'vmos';
+  const { row } = info;
+  const device = row?.original || {};
+  // Prefer the cosmetic display label. Fall back to the raw code only if the
+  // backend didn't populate display fields.
+  const display = device.providerDisplay || device.tierDisplay || info.getValue() || 'Phone';
   const className =
-    value === 'duoplus' ? 'Kicker ProviderChip ProviderChip--duoplus' : 'Kicker ProviderChip ProviderChip--vmos';
-  return <span className={className}>{value}</span>;
+    device.tier === 'ios' ? 'Kicker ProviderChip ProviderChip--duoplus' : 'Kicker ProviderChip ProviderChip--vmos';
+  return <span className={className}>{display}</span>;
 }
 
 function proxyCell({ row }) {
   const device = row.original;
-  if (device.provider !== 'duoplus') return <span className="Kicker">managed</span>;
+  if (device.tier !== 'ios') return <span className="Kicker">managed</span>;
   const configured = Boolean(device.providerMeta?.proxyConfigured);
   return (
     <span className={`Kicker ProxyState ${configured ? 'ProxyState--ok' : 'ProxyState--missing'}`}>
@@ -74,10 +82,10 @@ function idOf(value) {
 }
 
 function deviceName(device) {
-  if (device?.provider === 'duoplus' && device.providerDeviceId && device.name === `snap_${device.providerDeviceId}`) {
+  if (device?.tier === 'ios' && device.providerDeviceId && device.name === `snap_${device.providerDeviceId}`) {
     return device.providerDeviceId;
   }
-  return device ? device.name || device.providerDeviceId || String(device._id) : 'unassigned';
+  return device ? device.displayLabel || device.name || device.providerDeviceId || String(device._id) : 'unassigned';
 }
 
 function accountLabel(account) {
@@ -128,6 +136,8 @@ export function EngineOperationsPanel({
   onPoll,
   fetchFrames,
   loadDeviceFocus,
+  connectLiveControl,
+  sendLiveHeartbeat,
   assignAccountDevice,
   unassignAccountDevice,
   onboardAccount
@@ -144,7 +154,7 @@ export function EngineOperationsPanel({
   const [focusQuality, setFocusQuality] = useState({});
   const activeDevices = devices.filter((device) => !device.retiredAt);
   const filteredDevices =
-    providerFilter === 'all' ? activeDevices : activeDevices.filter((device) => device.provider === providerFilter);
+    providerFilter === 'all' ? activeDevices : activeDevices.filter((device) => device.tier === providerFilter);
   const loginFlowRows = buildLoginFlowRows({ devices: filteredDevices, accounts });
   const deviceOptions = [
     { value: 'none', label: 'No device' },
@@ -162,7 +172,7 @@ export function EngineOperationsPanel({
     setFocusDevice(device);
     setFocusPayload(null);
     setFocusError('');
-    if (device.provider !== 'duoplus') return;
+    if (device.tier !== 'ios') return;
     setFocusLoading(true);
     try {
       setFocusPayload(await loadDeviceFocus(device, quality));
@@ -184,9 +194,9 @@ export function EngineOperationsPanel({
   }
 
   const deviceColumns = [
-    { accessorKey: 'name', header: 'Device' },
-    { accessorKey: 'provider', header: 'Provider', cell: providerCell },
-    { accessorKey: 'providerDeviceId', header: 'Provider ID' },
+    { accessorKey: 'displayLabel', header: 'Device', cell: ({ row }) => deviceName(row.original) },
+    { accessorKey: 'tierDisplay', header: 'Tier', cell: providerCell },
+    { accessorKey: 'providerDeviceId', header: 'Device ID' },
     {
       accessorKey: 'status',
       header: 'Status',
@@ -209,7 +219,7 @@ export function EngineOperationsPanel({
       cell: ({ row }) => {
         const device = row.original;
         const actions =
-          device.provider === 'duoplus'
+          device.tier === 'ios'
             ? ['start', 'status', 'screenshot', 'focus', 'stop']
             : ['start', 'provision', 'screenshot', 'health-check', 'stop'];
         return (
@@ -330,7 +340,7 @@ export function EngineOperationsPanel({
           <div className="layout-inline-gap-8">
             <h2>Devices</h2>
             <Button size="sm" variant="secondary" loading={actionKey === 'devices:sync:vmos'} onClick={syncDevices}>
-              Sync VMOS devices
+              Sync Android pool
             </Button>
             <Button
               size="sm"
@@ -338,7 +348,7 @@ export function EngineOperationsPanel({
               loading={actionKey === 'devices:sync:duoplus'}
               onClick={syncDuoPlusDevices}
             >
-              Sync DuoPlus devices
+              Sync iPhone pool
             </Button>
             <Button
               size="sm"
@@ -349,7 +359,7 @@ export function EngineOperationsPanel({
               {focusMode ? 'Exit focus mode' : 'Focus mode'}
             </Button>
           </div>
-          <div className="layout-inline-gap-8" role="group" aria-label="Filter devices by provider">
+          <div className="layout-inline-gap-8" role="group" aria-label="Filter devices by fleet">
             <Button
               size="sm"
               variant={providerFilter === 'all' ? 'primary' : 'secondary'}
@@ -359,22 +369,22 @@ export function EngineOperationsPanel({
             </Button>
             <Button
               size="sm"
-              variant={providerFilter === 'vmos' ? 'primary' : 'secondary'}
-              onClick={() => setProviderFilter('vmos')}
+              variant={providerFilter === 'android' ? 'primary' : 'secondary'}
+              onClick={() => setProviderFilter('android')}
             >
-              VMOS ({activeDevices.filter((d) => d.provider === 'vmos').length})
+              Android ({activeDevices.filter((d) => d.tier === 'android').length})
             </Button>
             <Button
               size="sm"
-              variant={providerFilter === 'duoplus' ? 'primary' : 'secondary'}
-              onClick={() => setProviderFilter('duoplus')}
+              variant={providerFilter === 'ios' ? 'primary' : 'secondary'}
+              onClick={() => setProviderFilter('ios')}
             >
-              DuoPlus ({activeDevices.filter((d) => d.provider === 'duoplus').length})
+              iPhone ({activeDevices.filter((d) => d.tier === 'ios').length})
             </Button>
           </div>
           {focusMode ? (
-            <DuoPlusFocusMode
-              devices={filteredDevices}
+            <FocusMode
+              devices={filteredDevices.filter((d) => d.tier === 'ios')}
               accounts={accounts}
               actionKey={actionKey}
               onRefreshStatus={refreshDeviceStatus}
@@ -396,10 +406,10 @@ export function EngineOperationsPanel({
                 columns={deviceColumns}
                 data={filteredDevices}
                 emptyMessage={
-                  providerFilter === 'duoplus'
-                    ? 'No DuoPlus devices registered.'
-                    : providerFilter === 'vmos'
-                      ? 'No VMOS devices registered.'
+                  providerFilter === 'ios'
+                    ? 'No iPhone devices registered.'
+                    : providerFilter === 'android'
+                      ? 'No Android devices registered.'
                       : 'No devices registered.'
                 }
               />
@@ -413,6 +423,8 @@ export function EngineOperationsPanel({
             quality={focusQuality}
             onQualityChange={changeFocusQuality}
             onRefresh={refreshFocus}
+            connectLiveControl={connectLiveControl}
+            sendLiveHeartbeat={sendLiveHeartbeat}
             onClose={() => {
               setFocusDevice(null);
               setFocusPayload(null);
@@ -537,14 +549,14 @@ function LoginFlowOperatorBoard({ rows, actionKey, onRefresh, onFocus, onLogs })
           <div className={`LoginFlowRow LoginFlowRow--${row.stageTone}`} key={row.deviceId}>
             <div className="LoginFlowRow__main">
               <div className="LoginFlowRow__identity">
-                <span
+                 <span
                   className={
-                    row.provider === 'duoplus'
+                    row.tier === 'ios'
                       ? 'Kicker ProviderChip ProviderChip--duoplus'
                       : 'Kicker ProviderChip ProviderChip--vmos'
                   }
                 >
-                  {row.provider}
+                  {row.providerDisplay || row.tierDisplay || 'Phone'}
                 </span>
                 <div>
                   <h4>{row.deviceName}</h4>
@@ -610,12 +622,25 @@ function LoginFlowOperatorBoard({ rows, actionKey, onRefresh, onFocus, onLogs })
   );
 }
 
-function DuoPlusFocusPanel({ device, payload, loading, error, quality, onQualityChange, onRefresh, onClose }) {
+function DuoPlusFocusPanel({
+  device,
+  payload,
+  loading,
+  error,
+  quality,
+  onQualityChange,
+  onRefresh,
+  connectLiveControl,
+  sendLiveHeartbeat,
+  onClose
+}) {
+  const [useNative, setUseNative] = useState(false);
   if (!device) return null;
   const focus = payload?.focus || {};
   const displayDevice = payload?.device || device;
   const proxyConfigured = Boolean(displayDevice.providerMeta?.proxyConfigured);
   const live = Boolean(focus.liveStreamAvailable && focus.controlUrl);
+  const nativeAvailable = Boolean(connectLiveControl);
   const presets = focus.qualityPresets || [];
   const activePreset = (quality && quality.bitrate) || focus.quality?.bitrate;
   const deviceTitle = displayDevice.name || displayDevice.providerDeviceId;
@@ -628,9 +653,19 @@ function DuoPlusFocusPanel({ device, payload, loading, error, quality, onQuality
           <h3>{deviceTitle}</h3>
         </div>
         <div className="layout-inline-gap-8">
-          <span className={`FocusModeBadge FocusModeBadge--${live ? 'live' : 'fallback'}`}>
-            {live ? 'live' : 'screenshot'}
+          <span className={`FocusModeBadge FocusModeBadge--${useNative ? 'live' : live ? 'live' : 'fallback'}`}>
+            {useNative ? 'native' : live ? 'live' : 'screenshot'}
           </span>
+          {nativeAvailable ? (
+            <Button
+              size="sm"
+              variant={useNative ? 'primary' : 'secondary'}
+              aria-pressed={useNative}
+              onClick={() => setUseNative((prev) => !prev)}
+            >
+              {useNative ? 'native ●' : 'native control'}
+            </Button>
+          ) : null}
           <Button size="sm" variant="secondary" loading={loading} onClick={onRefresh}>
             refresh
           </Button>
@@ -659,7 +694,14 @@ function DuoPlusFocusPanel({ device, payload, loading, error, quality, onQuality
       ) : null}
       <div className="DuoPlusFocusPanel__body">
         <div className="DuoPlusFocusPanel__screen">
-          {live ? (
+          {useNative ? (
+            <LiveControl
+              device={displayDevice}
+              requestToken={(uuid) => connectLiveControl(displayDevice, uuid)}
+              sendHeartbeat={sendLiveHeartbeat ? (type) => sendLiveHeartbeat(displayDevice, type) : undefined}
+              onClose={() => setUseNative(false)}
+            />
+          ) : live ? (
             <iframe
               className="DuoPlusFocusPanel__frame"
               src={focus.controlUrl}

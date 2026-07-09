@@ -5,7 +5,9 @@
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.js",
+    "./duoplus-traffic-capture": "./src/duoplus-traffic-capture.js",
+    "./gematria-randomizer": "./src/gematria-randomizer.js"
   },
   "scripts": {
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js",

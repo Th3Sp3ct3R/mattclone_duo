@@ -118,9 +118,42 @@ export class DuoplusInternalClient {
     return this.request('/image/batchHeartbeat', { image_ids: imageIds, type });
   }
 
-  // Returns the ARMVM/veRTC control token for live control (out of demo scope).
+  // --- Live-control handshake (see docs/duoplus-endpoints-captured.md §3) -----
+  // The browser runs startCheck -> start -> connect -> connectTokenShared, then
+  // hands the resulting serverToken to the RedFinger `BgsSdk` web SDK
+  // (BgsSdk.initPhone / startPhone), which opens the ByteDance VeRTC stream.
+
+  // Pre-flight. Returns route_list (mobnow.net edges) + video_stream_support.
+  // Does not boot or lease the phone, so it is safe to call speculatively.
+  startCheck(imageId) {
+    return this.request('/image/startCheck', { image_id: String(imageId || '') });
+  }
+
+  // Leases/boots the phone. Returns { need_waiting, task_progress,
+  // deduction_type, duration_seconds }. This is metered on control time — only
+  // call when a control session is actually intended.
+  start(imageId, { fixedType = 1 } = {}) {
+    return this.request('/image/start', { image_id: String(imageId || ''), fixed_type: fixedType });
+  }
+
+  // Returns the ARMVM `resultInfo` token: control gateway, merchantInfo
+  // (appkey/appSecret), sessionId, padCode. Consumed by BgsSdk.initPhone.
   connect(imageId) {
     return this.request('/image/connect', { image_id: String(imageId || '') });
+  }
+
+  // Returns the serverToken(s) that BgsSdk.startPhone consumes, keyed to a
+  // client-generated `uuid` (the same uuid the browser uses to mint its
+  // clientToken). Pass a single image_id for single-phone control.
+  connectTokenShared(imageIds = [], uuid) {
+    if (!uuid) throw new DeviceControlError('connectTokenShared requires a uuid', { code: 'DUOPLUS_CONFIG' });
+    const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
+    return this.request('/image/connectTokenShared', { image_ids: ids.map((id) => String(id)), uuid: String(uuid) });
+  }
+
+  // Per-phone control-session keepalive. type 1 = active control, 3 = background.
+  heartbeat(imageId, type = 1) {
+    return this.request('/image/heartbeat', { image_id: String(imageId || ''), type: Number(type) });
   }
 
   async captureFrames(imageIds = [], options = {}) {

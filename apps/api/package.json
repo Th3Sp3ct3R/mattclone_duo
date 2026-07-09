@@ -37,6 +37,7 @@
     "frames:duoplus": "node ./scripts/duoplus-frames.mjs",
     "migrate:legacy": "node ./scripts/migrate-legacy.mjs",
     "patch:blog:longform": "node ./scripts/patch-blog-longform.mjs",
+    "onboard:account": "node ./bin/onboard-account.mjs",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js --passWithNoTests"
   },
   "dependencies": {
