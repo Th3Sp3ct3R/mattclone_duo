@@ -40,3 +40,5 @@ export function createLogger({ level = 'info', transport = console } = {}) {
 
 export const defaultLogger = createLogger();
 
+export { createStructuredLogger } from './structured.js';
+
