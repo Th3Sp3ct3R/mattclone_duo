@@ -7,7 +7,9 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "whatsapp-report/packages/*",
+    "whatsapp-report/apps/*"
   ],
   "scripts": {
     "dev": "PORT=5175 NODE_ENV=development yarn workspace @julio/web-next start:single",
