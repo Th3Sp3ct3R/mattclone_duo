@@ -11,6 +11,7 @@ module.exports = {
     '<rootDir>/packages/shared/jest.config.js',
     '<rootDir>/packages/api-client/jest.config.js',
     '<rootDir>/packages/ui/jest.config.js',
-    '<rootDir>/packages/validation/jest.config.js'
+    '<rootDir>/packages/validation/jest.config.js',
+    '<rootDir>/packages/whatsapp/jest.config.js'
   ]
 };
