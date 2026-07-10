@@ -11,3 +11,5 @@ export * from './messaging/rabbit-job-dispatcher.js';
 export * from './messaging/rabbit-redis-event-bus.js';
 export * from './secrets/keychain-env-secret-resolver.js';
 export * from './clock/system-clock.js';
+export * from './procurement/dark-shopping-procurement-adapter.js';
+export * from './procurement/expense-recorder.js';

@@ -82,7 +82,8 @@ export function createDarkShoppingProcurementAdapter({ client, importer, config 
         );
       }
 
-      return client.purchase(quantity);
+      const result = await client.purchase(quantity);
+      return { ...result, amountUsdCents: liveTotal };
     },
 
     async fetchDelivered(order) {

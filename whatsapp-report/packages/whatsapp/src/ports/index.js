@@ -25,6 +25,7 @@
  * @property {(filter: Object) => Promise<Object[]>} find
  * @property {(account: Object) => Promise<Object>} save
  * @property {(filter: Object) => Promise<number>} countAvailable
+ * @property {(accounts: Object[], opts: { orderId: string }) => Promise<Object[]>} insertPurchased
  *
  * @typedef {Object} JobDispatcher
  * @property {(queue: string, job: Object, opts?: Object) => Promise<Object>} dispatch

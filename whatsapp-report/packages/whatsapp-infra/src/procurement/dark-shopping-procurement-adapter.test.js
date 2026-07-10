@@ -76,8 +76,23 @@ describe('darkShoppingProcurementAdapter', () => {
 
     const result = await adapter.purchase(5);
 
-    expect(result).toEqual({ orderId: 'o1' });
+    expect(result).toEqual({ orderId: 'o1', amountUsdCents: 500 });
     expect(client.calls.purchase).toEqual([[5]]);
+  });
+
+  it('purchase returns the vendor orderId with the guard-validated amountUsdCents', async () => {
+    const client = fakeClient({
+      offers: [{ unitPriceUsdCents: 100 }],
+      balance: { balanceUsdCents: 5000 },
+      order: { orderId: 'o1' }
+    });
+    const importer = fakeImporter();
+    const adapter = createDarkShoppingProcurementAdapter({ client, importer, config: baseConfig });
+
+    const result = await adapter.purchase(5);
+
+    expect(result.orderId).toBe('o1');
+    expect(result.amountUsdCents).toBe(500);
   });
 
   it('price drift guard: 20% drift throws and does not purchase', async () => {
@@ -143,7 +158,7 @@ describe('darkShoppingProcurementAdapter', () => {
 
     const result = await purchase(5);
 
-    expect(result).toEqual({ orderId: 'o1' });
+    expect(result).toEqual({ orderId: 'o1', amountUsdCents: 500 });
     expect(client.calls.purchase).toEqual([[5]]);
     expect(client.calls.getBalance).toHaveLength(1);
   });
