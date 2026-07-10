@@ -5,6 +5,7 @@ import {
   registerConsumers,
   republishRetries,
   scheduleProbes,
+  healthHandler,
   main
 } from './orchestrator.js';
 
@@ -283,6 +284,39 @@ describe('scheduleProbes', () => {
 
     expect(dispatched).toBe(0);
     expect(dispatchCalls).toEqual([]);
+  });
+});
+
+describe('healthHandler', () => {
+  function makeRes() {
+    const rec = { head: undefined, body: undefined };
+    return {
+      writeHead(code, headers) {
+        rec.head = [code, headers];
+        return this;
+      },
+      end(body) {
+        rec.body = body;
+        return this;
+      },
+      rec
+    };
+  }
+
+  test('answers GET /health with 200 JSON { ok:true, service:"whatsapp" }', () => {
+    const res = makeRes();
+    healthHandler({ url: '/health', method: 'GET' }, res);
+
+    expect(res.rec.head[0]).toBe(200);
+    expect(res.rec.head[1]['Content-Type']).toBe('application/json');
+    expect(JSON.parse(res.rec.body)).toEqual({ ok: true, service: 'whatsapp' });
+  });
+
+  test('answers any other path with 404', () => {
+    const res = makeRes();
+    healthHandler({ url: '/other', method: 'GET' }, res);
+
+    expect(res.rec.head[0]).toBe(404);
   });
 });
 

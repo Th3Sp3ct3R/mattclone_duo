@@ -9,6 +9,8 @@
 // No I/O runs at import: `main()` only executes on direct-run or when a test
 // calls it with fakes. The exported `reconcileTick` / `HANDLERS` /
 // `registerConsumers` pieces are individually testable with injected fakes.
+import http from 'node:http';
+
 import cron from 'node-cron';
 
 import { reconcile } from '@julio/whatsapp';
@@ -147,7 +149,20 @@ export async function registerConsumers(
   }
 }
 
-// 4) main() lifecycle — mirrors apps/worker/src/index.js.
+// 4) Liveness/health handler (REQUIREM §16). Pure request/response function so a
+// deploy platform can liveness-probe this worker, which otherwise exposes no HTTP
+// surface (the MCP-HTTP process runs separately). GET /health -> 200 JSON; else 404.
+export function healthHandler(req, res) {
+  if (req.method === 'GET' && req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, service: 'whatsapp' }));
+    return;
+  }
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ ok: false, error: 'not_found' }));
+}
+
+// 5) main() lifecycle — mirrors apps/worker/src/index.js.
 export async function main(overrides = {}) {
   const e = overrides.env ?? env;
   if (!e.mongodbUri) throw new Error('Missing MONGODB_URI');
@@ -194,6 +209,12 @@ export async function main(overrides = {}) {
   }
 
   await registerConsumers(ctx);
+
+  // Liveness surface so the deploy platform can health-probe this worker.
+  const healthServer = http
+    .createServer(healthHandler)
+    .listen(e.healthPort ?? 7301, () => ctx.logger?.info?.('[whatsapp] health on', { port: e.healthPort }));
+
   ctx.logger?.info?.('[whatsapp] running');
 
   async function shutdown(signal) {
@@ -201,6 +222,7 @@ export async function main(overrides = {}) {
     task.stop();
     probeTask.stop();
     retryTask.stop();
+    healthServer.close();
     try {
       await releaseLeasesByOwner(EngineDevice, { owner: ctx.owner });
     } catch {
@@ -214,7 +236,7 @@ export async function main(overrides = {}) {
   process.on('SIGINT', () => shutdown('SIGINT').then(() => process.exit(0)));
   process.on('SIGTERM', () => shutdown('SIGTERM').then(() => process.exit(0)));
 
-  return { ctx, task, probeTask, retryTask };
+  return { ctx, task, probeTask, retryTask, healthServer };
 }
 
 // Guarded direct-run entrypoint: only run when executed directly, not when

@@ -13,6 +13,12 @@ describe('loadWhatsappEnv', () => {
     expect(cfg.mongodbUri).toBe('mongodb://x');
     expect(cfg.probeCron).toBe('*/15 * * * *');
     expect(cfg.mcpHttpPort).toBe(7300);
+    expect(cfg.healthPort).toBe(7301);
+  });
+
+  it('reads the orchestrator health port, defaulting to 7301', () => {
+    expect(loadWhatsappEnv({}).healthPort).toBe(7301);
+    expect(loadWhatsappEnv({ WHATSAPP_HEALTH_PORT: '7999' }).healthPort).toBe(7999);
   });
 
   it('defaults autobuyEnabled to false when unset', () => {

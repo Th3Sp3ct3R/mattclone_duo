@@ -38,6 +38,8 @@ const schema = defineSchema({
   WHATSAPP_MCP_HTTP_PORT: rules.optionalNumber(7300),
   WHATSAPP_MCP_AUTH_TOKEN: rules.optionalString(),
 
+  WHATSAPP_HEALTH_PORT: rules.optionalNumber(7301),
+
   LOG_LEVEL: rules.optionalString('info')
 });
 
@@ -83,6 +85,8 @@ export function loadWhatsappEnv(env = process.env) {
 
     mcpHttpPort: cfg.WHATSAPP_MCP_HTTP_PORT,
     mcpAuthToken: cfg.WHATSAPP_MCP_AUTH_TOKEN,
+
+    healthPort: cfg.WHATSAPP_HEALTH_PORT,
 
     logLevel: cfg.LOG_LEVEL,
 
