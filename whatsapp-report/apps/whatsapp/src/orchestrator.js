@@ -24,6 +24,7 @@ import {
   publishJson
 } from '@julio/api/queue/rabbitmq';
 import { EngineDevice } from '@julio/api/models/engine-device';
+import { EngineJobRun } from '@julio/api/models/engine-job-run';
 
 import { env } from './config/env.js';
 import { buildContext } from './composition.js';
@@ -58,6 +59,35 @@ export const HANDLERS = [
   { queue: 'whatsapp.report', handler: runReportTaskHandler }
 ];
 
+// The queues this process owns — used to scope the retry-republish sweep.
+export const WHATSAPP_QUEUES = HANDLERS.map((h) => h.queue);
+
+// Retry-republish sweep: this process's consumers nack-drop transient failures
+// (the broker message is gone), and `runJob` leaves the EngineJobRun as
+// `status:'queued'` with a due `nextRetryAt`. The engine's own retry cron does
+// NOT run here, so nothing would re-deliver. This function re-publishes every
+// due, queued job run for our queues back onto its queue. Testable with fakes.
+export async function republishRetries(ctx, { publish = publishJson, model = EngineJobRun } = {}) {
+  const now = ctx.clock.now();
+  const due = await model
+    .find({
+      queueName: { $in: WHATSAPP_QUEUES },
+      status: 'queued',
+      nextRetryAt: { $ne: null, $lte: now }
+    })
+    .lean();
+  for (const jr of due) {
+    await publish(jr.queueName, {
+      jobRunId: String(jr._id),
+      jobName: jr.jobName,
+      targetType: jr.targetType,
+      targetId: jr.targetId,
+      payload: jr.payload
+    });
+  }
+  return due.length;
+}
+
 // 3) Register consumers — testable with injected fakes.
 export async function registerConsumers(
   ctx,
@@ -71,11 +101,16 @@ export async function registerConsumers(
   } = {}
 ) {
   for (const { queue, handler } of HANDLERS) {
-    const wrapped = (payload) =>
+    // The broker message is the full dispatch envelope
+    // `{ jobRunId, jobName, targetType, targetId, payload }`. `runJob` needs the
+    // whole message (it reads `message.jobRunId`), but handlers read domain
+    // fields at the top level — those live under `message.payload`. Pass the full
+    // message to `run` and the unwrapped domain payload to the handler.
+    const wrapped = (message) =>
       run(
-        payload,
+        message,
         (p, jobRun) =>
-          handler(p, {
+          handler(p.payload ?? {}, {
             ...ctx,
             logger:
               ctx.logger?.child?.({ correlationId: String(jobRun?._id ?? '') }) ?? ctx.logger
@@ -113,11 +148,21 @@ export async function main(overrides = {}) {
     );
   });
 
+  // Retry-republish cron (every minute, like the engine's job-retry cron): our
+  // consumers nack-drop transient failures, so re-deliver due queued job runs.
+  const retryTask = cron.schedule('* * * * *', () => {
+    republishRetries(ctx).catch((err) =>
+      ctx.logger?.error?.('retry republish failed', { error: err.message })
+    );
+  });
+
   // Event-driven speed: react immediately to key events instead of waiting for
   // the next cron tick.
   for (const type of ['account.banned', 'queue.low', 'pool.low']) {
     ctx.eventBus.subscribe(type, () => {
-      reconcileTick(ctx).catch(() => {});
+      reconcileTick(ctx).catch((err) =>
+        ctx.logger?.error?.('event reconcile failed', { error: err.message })
+      );
     });
   }
 
@@ -127,6 +172,7 @@ export async function main(overrides = {}) {
   async function shutdown(signal) {
     ctx.logger?.info?.('[whatsapp] shutting down', { signal });
     task.stop();
+    retryTask.stop();
     try {
       await releaseLeasesByOwner(EngineDevice, { owner: ctx.owner });
     } catch {
@@ -140,7 +186,7 @@ export async function main(overrides = {}) {
   process.on('SIGINT', () => shutdown('SIGINT').then(() => process.exit(0)));
   process.on('SIGTERM', () => shutdown('SIGTERM').then(() => process.exit(0)));
 
-  return { ctx, task };
+  return { ctx, task, retryTask };
 }
 
 // Guarded direct-run entrypoint: only run when executed directly, not when

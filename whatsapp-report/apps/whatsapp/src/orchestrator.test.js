@@ -1,4 +1,11 @@
-import { reconcileTick, HANDLERS, registerConsumers, main } from './orchestrator.js';
+import {
+  reconcileTick,
+  HANDLERS,
+  WHATSAPP_QUEUES,
+  registerConsumers,
+  republishRetries,
+  main
+} from './orchestrator.js';
 
 // Tiny recorder helper (this suite runs ESM under experimental-vm-modules, where
 // the `jest` global is not injected — so we roll our own spies).
@@ -103,6 +110,119 @@ describe('registerConsumers', () => {
     expect(run.calls[0][2]).toEqual({ clock });
     // correlationId threaded from jobRun._id into logger.child(...)
     expect(logger.child.calls).toContainEqual([{ correlationId: 'JR-1' }]);
+  });
+});
+
+describe('registerConsumers payload unwrapping', () => {
+  test('hands the domain payload (message.payload) to the handler, not the whole message', async () => {
+    const clock = { now: () => new Date('2026-07-10T09:00:00Z') };
+    const logger = { child: recorder(() => ({})) };
+
+    // buyAccountsHandler -> buyAccounts(...) reads `payload.quantity` and calls
+    // procurement.purchase(quantity). Recording purchase's arg proves the handler
+    // received the UNWRAPPED domain payload ({ quantity: 5 }) — not the whole
+    // message (which would make quantity `undefined`). accountRepo.find returns a
+    // non-empty array so buyAccounts short-circuits (idempotent) without I/O.
+    const purchaseCalls = [];
+    const ctx = {
+      logger,
+      clock,
+      procurement: {
+        purchase: (q) => {
+          purchaseCalls.push(q);
+          return { orderId: 'o1' };
+        }
+      },
+      accountRepo: { find: async () => [{ _id: 'existing' }] },
+      expenseRecorder: {}
+    };
+
+    const run = recorder(async (message, innerFn) => {
+      await innerFn(message, { _id: 'JR-1' });
+      return { ok: true };
+    });
+    const consumeWithDlq = recorder(async () => undefined);
+
+    await registerConsumers(ctx, {
+      consumeWithDlq,
+      consume: () => {},
+      publish: () => {},
+      run
+    });
+
+    // First consumer is whatsapp.buy -> buyAccountsHandler.
+    const buyWrapped = consumeWithDlq.calls[0][1];
+    await buyWrapped({ jobRunId: 'jr1', jobName: 'buy-accounts', payload: { quantity: 5 } });
+
+    // runJob still receives the FULL message (it needs message.jobRunId).
+    expect(run.calls[0][0]).toEqual({ jobRunId: 'jr1', jobName: 'buy-accounts', payload: { quantity: 5 } });
+    // The handler received the domain payload: quantity 5 flowed into purchase().
+    expect(purchaseCalls).toEqual([5]);
+  });
+});
+
+describe('republishRetries', () => {
+  test('republishes due queued job runs, preserving payload/shape', async () => {
+    const now = new Date('2026-07-10T09:00:00Z');
+    const clock = { now: () => now };
+    const ctx = { clock };
+
+    const dueRows = [
+      {
+        _id: 'r1',
+        queueName: 'whatsapp.buy',
+        jobName: 'buy-accounts',
+        targetType: 'account',
+        targetId: 't1',
+        payload: { quantity: 5 }
+      },
+      {
+        _id: 'r2',
+        queueName: 'whatsapp.probe',
+        jobName: 'probe-health',
+        targetType: '',
+        targetId: null,
+        payload: { deviceId: 'd1' }
+      }
+    ];
+
+    let findArg;
+    const model = {
+      find: (q) => {
+        findArg = q;
+        return { lean: async () => dueRows };
+      }
+    };
+
+    const publishCalls = [];
+    const publish = async (queue, msg) => {
+      publishCalls.push([queue, msg]);
+    };
+
+    const count = await republishRetries(ctx, { publish, model });
+
+    // Query targets only whatsapp queues that are queued + due.
+    expect(findArg).toEqual({
+      queueName: { $in: WHATSAPP_QUEUES },
+      status: 'queued',
+      nextRetryAt: { $ne: null, $lte: now }
+    });
+
+    expect(count).toBe(2);
+    expect(publishCalls).toEqual([
+      [
+        'whatsapp.buy',
+        { jobRunId: 'r1', jobName: 'buy-accounts', targetType: 'account', targetId: 't1', payload: { quantity: 5 } }
+      ],
+      [
+        'whatsapp.probe',
+        { jobRunId: 'r2', jobName: 'probe-health', targetType: '', targetId: null, payload: { deviceId: 'd1' } }
+      ]
+    ]);
+  });
+
+  test('WHATSAPP_QUEUES mirrors the HANDLERS queue names', () => {
+    expect(WHATSAPP_QUEUES).toEqual(HANDLERS.map((h) => h.queue));
   });
 });
 
