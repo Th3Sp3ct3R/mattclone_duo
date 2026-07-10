@@ -26,3 +26,13 @@ export {
 } from './instagram/ui-flows.js';
 export { YOUTUBE_PACKAGE } from './youtube/constants.js';
 export { checkYouTubeLoginState, loginYouTube, publishYouTubeShort, setupYouTubeChannel } from './youtube/ui-flows.js';
+export {
+  WHATSAPP_PACKAGE,
+  WHATSAPP_LAUNCHER_ACTIVITY,
+  WHATSAPP_HOME_TEXTS,
+  WHATSAPP_BAN_TEXTS,
+  WHATSAPP_REPORT_TEXTS,
+  WHATSAPP_DISMISS_TEXTS
+} from './whatsapp/constants.js';
+export { checkWhatsappState, reportTarget, bringWhatsappOnline, detectBanScreen } from './whatsapp/ui-flows.js';
+export { whatsappAdapter } from './whatsapp/adapter.js';
