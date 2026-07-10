@@ -1,0 +1,30 @@
+{
+  "name": "@julio/whatsapp-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/orchestrator.js",
+  "scripts": {
+    "dev": "node --watch ./src/orchestrator.js",
+    "start": "node ./src/orchestrator.js",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js --passWithNoTests",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@julio/whatsapp": "0.1.0",
+    "@julio/whatsapp-infra": "0.1.0",
+    "@julio/api": "*",
+    "@julio/config": "*",
+    "@julio/logger": "0.1.0",
+    "@julio/shared": "*",
+    "node-cron": "^3.0.3",
+    "amqplib": "^0.10.4",
+    "ioredis": "^5.4.1",
+    "mongoose": "^8.7.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "eslint": "^9.17.0",
+    "jest": "^29.7.0"
+  }
+}

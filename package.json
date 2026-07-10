@@ -16,6 +16,7 @@
     "dev:web": "yarn workspace @julio/web-next dev",
     "dev:api": "yarn workspace @julio/api dev",
     "dev:worker": "yarn workspace @julio/worker dev",
+    "dev:whatsapp": "yarn workspace @julio/whatsapp-app dev",
     "dev:mobile": "yarn workspace @julio/mobile dev",
     "build": "yarn workspaces run build",
     "build:web": "yarn workspace @julio/web-next build",
