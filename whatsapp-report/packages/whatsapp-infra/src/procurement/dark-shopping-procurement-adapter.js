@@ -25,11 +25,17 @@ function pickUnitPriceUsdCents(offers) {
     : 0;
 }
 
+// Reads the live balance without relying on `this`, so both the public
+// getBalance() and the purchase() balance guard share one code path and the
+// adapter methods keep working when destructured off the object.
+async function fetchBalanceUsdCents(client) {
+  return readBalanceUsdCents(await client.getBalance());
+}
+
 export function createDarkShoppingProcurementAdapter({ client, importer, config }) {
   return {
     async getBalance() {
-      const b = await client.getBalance();
-      return { balanceUsdCents: readBalanceUsdCents(b) };
+      return { balanceUsdCents: await fetchBalanceUsdCents(client) };
     },
 
     async listOffers() {
@@ -37,12 +43,24 @@ export function createDarkShoppingProcurementAdapter({ client, importer, config 
     },
 
     async purchase(quantity) {
+      // (0) quantity — reject non-positive / non-integer before any client call
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        throw domainError(
+          'PROCUREMENT_QUANTITY_INVALID',
+          `quantity must be a positive integer, got ${quantity}`
+        );
+      }
+
       const offers = await client.listOffers();
       const liveUnit = pickUnitPriceUsdCents(offers);
 
-      // (1) price drift
+      // (1) price drift — fail safe: a non-positive expected unit or a
+      // non-finite drift throws rather than passing the guard open.
+      if (!(config.expectedUnitUsdCents > 0)) {
+        throw domainError('PROCUREMENT_PRICE_DRIFT', 'expectedUnitUsdCents must be a positive integer');
+      }
       const drift = Math.abs(liveUnit - config.expectedUnitUsdCents) / config.expectedUnitUsdCents;
-      if (drift > (config.priceDriftTolerance ?? 0.1)) {
+      if (!Number.isFinite(drift) || drift > (config.priceDriftTolerance ?? 0.1)) {
         throw domainError('PROCUREMENT_PRICE_DRIFT', `unit price drift ${(drift * 100).toFixed(1)}%`);
       }
 
@@ -56,7 +74,7 @@ export function createDarkShoppingProcurementAdapter({ client, importer, config 
       }
 
       // (3) balance
-      const { balanceUsdCents } = await this.getBalance();
+      const balanceUsdCents = await fetchBalanceUsdCents(client);
       if (balanceUsdCents < liveTotal) {
         throw domainError(
           'PROCUREMENT_INSUFFICIENT_BALANCE',

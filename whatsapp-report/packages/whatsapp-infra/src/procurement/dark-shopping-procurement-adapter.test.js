@@ -110,6 +110,44 @@ describe('darkShoppingProcurementAdapter', () => {
     expect(client.calls.purchase).toHaveLength(0);
   });
 
+  it('quantity guard: non-positive/non-integer quantity throws before any client call', async () => {
+    const client = fakeClient({ offers: [{ unitPriceUsdCents: 100 }] });
+    const importer = fakeImporter();
+    const adapter = createDarkShoppingProcurementAdapter({ client, importer, config: baseConfig });
+
+    await expect(adapter.purchase(0)).rejects.toThrow('PROCUREMENT_QUANTITY_INVALID');
+    await expect(adapter.purchase(-5)).rejects.toThrow('PROCUREMENT_QUANTITY_INVALID');
+    await expect(adapter.purchase(1.5)).rejects.toThrow('PROCUREMENT_QUANTITY_INVALID');
+    expect(client.calls.purchase).toHaveLength(0);
+    expect(client.calls.listOffers).toHaveLength(0);
+  });
+
+  it('drift guard fails safe: expectedUnitUsdCents 0 with empty offers throws, no purchase', async () => {
+    const client = fakeClient({ offers: [] });
+    const importer = fakeImporter();
+    const config = { ...baseConfig, expectedUnitUsdCents: 0 };
+    const adapter = createDarkShoppingProcurementAdapter({ client, importer, config });
+
+    await expect(adapter.purchase(5)).rejects.toThrow('PROCUREMENT_PRICE_DRIFT');
+    expect(client.calls.purchase).toHaveLength(0);
+  });
+
+  it('purchase works when destructured off the adapter (no this dependency)', async () => {
+    const client = fakeClient({
+      offers: [{ unitPriceUsdCents: 100 }],
+      balance: { balanceUsdCents: 5000 },
+      order: { orderId: 'o1' }
+    });
+    const importer = fakeImporter();
+    const { purchase } = createDarkShoppingProcurementAdapter({ client, importer, config: baseConfig });
+
+    const result = await purchase(5);
+
+    expect(result).toEqual({ orderId: 'o1' });
+    expect(client.calls.purchase).toEqual([[5]]);
+    expect(client.calls.getBalance).toHaveLength(1);
+  });
+
   it('fetchDelivered passes the client raw and the verifiedFormat flag to the importer', async () => {
     const raw = { rows: ['raw-row'] };
     const client = fakeClient({ raw });
