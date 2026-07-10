@@ -13,6 +13,7 @@
     "build": "node -e \"console.log('integrations: no build step')\""
   },
   "dependencies": {
+    "@julio/whatsapp": "0.1.0",
     "https-proxy-agent": "latest",
     "socks-proxy-agent": "latest"
   }
