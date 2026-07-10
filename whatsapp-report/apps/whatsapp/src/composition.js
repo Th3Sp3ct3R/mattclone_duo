@@ -95,7 +95,12 @@ export function buildContext({ env, deps = {} } = {}) {
     clock,
     logger,
     deviceModel: D.EngineDevice,
-    lease: { claim: D.claimRunningDeviceLease, release: D.releaseDeviceLease },
+    lease: {
+      // Adapter: handlers call lease.claim(deviceId, owner) positionally, but the
+      // real claimRunningDeviceLease takes an object { owner, ttlMs, deviceId }.
+      claim: (deviceId, owner) => D.claimRunningDeviceLease({ deviceId, owner }),
+      release: (deviceId, owner) => D.releaseDeviceLease(deviceId, owner)
+    },
     owner: `whatsapp:${process.pid}`,
     config: {
       poolThreshold: env.pool.threshold,

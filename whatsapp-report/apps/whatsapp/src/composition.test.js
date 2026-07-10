@@ -22,8 +22,15 @@ function makeDeps() {
 
   const importDelivered = () => 'imported';
   const publishJson = () => 'published';
-  const claimRunningDeviceLease = () => 'claim:result';
-  const releaseDeviceLease = () => 'release:result';
+  const leaseCalls = { claim: [], release: [] };
+  const claimRunningDeviceLease = (arg) => {
+    leaseCalls.claim.push(arg);
+    return 'claim:result';
+  };
+  const releaseDeviceLease = (...args) => {
+    leaseCalls.release.push(args);
+    return 'release:result';
+  };
 
   class DuoplusClient {
     constructor(arg) {
@@ -59,7 +66,15 @@ function makeDeps() {
     releaseDeviceLease
   };
 
-  return { deps, calls, importDelivered, publishJson, claimRunningDeviceLease, releaseDeviceLease };
+  return {
+    deps,
+    calls,
+    importDelivered,
+    publishJson,
+    claimRunningDeviceLease,
+    releaseDeviceLease,
+    leaseCalls
+  };
 }
 
 describe('buildContext', () => {
@@ -83,16 +98,35 @@ describe('buildContext', () => {
     expect(ctx.logger).toBe('createStructuredLogger:result');
   });
 
-  it('wires the device lease, device model, and owner from injected deps', () => {
+  it('wires the device model and owner from injected deps', () => {
     const env = makeEnv();
-    const { deps, claimRunningDeviceLease, releaseDeviceLease } = makeDeps();
+    const { deps } = makeDeps();
 
     const ctx = buildContext({ env, deps });
 
     expect(ctx.deviceModel).toBe('EngineDevice:sentinel');
-    expect(ctx.lease.claim).toBe(claimRunningDeviceLease);
-    expect(ctx.lease.release).toBe(releaseDeviceLease);
     expect(ctx.owner).toMatch(/^whatsapp:/);
+  });
+
+  it('adapts the positional lease.claim call to the object-based claimRunningDeviceLease', () => {
+    const env = makeEnv();
+    const { deps, leaseCalls } = makeDeps();
+
+    const ctx = buildContext({ env, deps });
+
+    // Handlers call lease.claim(deviceId, owner) positionally; the real API is object-based.
+    ctx.lease.claim('d1', 'owner-x');
+    expect(leaseCalls.claim).toEqual([{ deviceId: 'd1', owner: 'owner-x' }]);
+  });
+
+  it('passes lease.release through positionally to releaseDeviceLease', () => {
+    const env = makeEnv();
+    const { deps, leaseCalls } = makeDeps();
+
+    const ctx = buildContext({ env, deps });
+
+    ctx.lease.release('d1', 'owner-x');
+    expect(leaseCalls.release).toEqual([['d1', 'owner-x']]);
   });
 
   it('returns all ctx keys plus config', () => {
