@@ -134,6 +134,11 @@ Commit messages: `feat(whatsapp-app): <handler> job handler`.
 
 ---
 
+## Known follow-ups (from Plan 5's final review)
+
+- **Health-probe scheduling (design Flow D) is DEFERRED.** `reconcile()` emits no probe intent and `dispatchIntents` has no probe case, so the `whatsapp.probe` consumer + `probeHealthHandler` are wired but not yet fed. Proactive/scheduled ban detection is therefore not active; bans are currently caught **reactively** during `bring-online`/`run-report-task`. Follow-up: add a probe-scheduling cron (or a probe intent) that enqueues `whatsapp.probe` for `online`/`cooldown` accounts on `WHATSAPP_PROBE_CRON`. The handler + queue + consumer are ready.
+- **Fixed in review:** (1) handlers now receive the unwrapped domain `payload` (was passing the whole broker envelope → undefined inputs); (2) `republishRetries` node-cron re-delivers `queued` `EngineJobRun` rows (the engine's retry cron doesn't run in this process); (3) retriable conditions (`device-busy`, report `not-confirmed`) now THROW (transient → retried) instead of returning success; (4) reconciler idempotency keys for `bring-online`/`evict`/`report` are hourly-bucketed so incomplete work is re-attempted (exactly-once still enforced by `upsertTask` + the unique index); (5) lease `claim` positional→object adapter.
+
 ## Self-Review (Plan 5)
 
 **Spec coverage:** reconciler cron (§6) → T12; six flows A-F (§6) → T4-11; DLQ (§10) → T12 (via Plan 2 wrapper); config 12-factor (§11) → T2; composition (§3) → T3; correlationId (§6.1) → T12; graceful shutdown/leases (§19, §3.3) → T12. **Reuse:** cron/`dispatchEngineJob`/`runEngineJob`/rabbitmq/mongo/redis/lease from `@julio/api`+`@julio/shared`; all adapters from Plan 2-4; `reconcile`/`bareClock` from domain+infra.
