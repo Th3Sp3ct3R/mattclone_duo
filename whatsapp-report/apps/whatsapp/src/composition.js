@@ -3,6 +3,8 @@ import { createDarkShoppingClient, importDelivered } from '@julio/integrations';
 import { createCloudPhoneProvider, DuoplusClient } from '@julio/device-control';
 import { getRedis } from '@julio/api/db/redis';
 import { publishJson } from '@julio/api/queue/rabbitmq';
+import { EngineDevice } from '@julio/api/models/engine-device';
+import { claimRunningDeviceLease, releaseDeviceLease } from '@julio/api/services/device-lease';
 import { createStructuredLogger } from '@julio/logger';
 
 /**
@@ -32,6 +34,9 @@ export function buildContext({ env, deps = {} } = {}) {
     DuoplusClient,
     getRedis,
     publishJson,
+    EngineDevice,
+    claimRunningDeviceLease,
+    releaseDeviceLease,
     createStructuredLogger,
     ...deps
   };
@@ -89,6 +94,9 @@ export function buildContext({ env, deps = {} } = {}) {
     secretResolver,
     clock,
     logger,
+    deviceModel: D.EngineDevice,
+    lease: { claim: D.claimRunningDeviceLease, release: D.releaseDeviceLease },
+    owner: `whatsapp:${process.pid}`,
     config: {
       poolThreshold: env.pool.threshold,
       buyBatchSize: env.pool.buyBatchSize,

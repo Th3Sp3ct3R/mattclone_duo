@@ -22,6 +22,8 @@ function makeDeps() {
 
   const importDelivered = () => 'imported';
   const publishJson = () => 'published';
+  const claimRunningDeviceLease = () => 'claim:result';
+  const releaseDeviceLease = () => 'release:result';
 
   class DuoplusClient {
     constructor(arg) {
@@ -51,10 +53,13 @@ function makeDeps() {
       return 'getRedis:result';
     },
     publishJson,
-    createStructuredLogger: record('createStructuredLogger')
+    createStructuredLogger: record('createStructuredLogger'),
+    EngineDevice: 'EngineDevice:sentinel',
+    claimRunningDeviceLease,
+    releaseDeviceLease
   };
 
-  return { deps, calls, importDelivered, publishJson };
+  return { deps, calls, importDelivered, publishJson, claimRunningDeviceLease, releaseDeviceLease };
 }
 
 describe('buildContext', () => {
@@ -78,7 +83,19 @@ describe('buildContext', () => {
     expect(ctx.logger).toBe('createStructuredLogger:result');
   });
 
-  it('returns all 12 ctx keys plus config', () => {
+  it('wires the device lease, device model, and owner from injected deps', () => {
+    const env = makeEnv();
+    const { deps, claimRunningDeviceLease, releaseDeviceLease } = makeDeps();
+
+    const ctx = buildContext({ env, deps });
+
+    expect(ctx.deviceModel).toBe('EngineDevice:sentinel');
+    expect(ctx.lease.claim).toBe(claimRunningDeviceLease);
+    expect(ctx.lease.release).toBe(releaseDeviceLease);
+    expect(ctx.owner).toMatch(/^whatsapp:/);
+  });
+
+  it('returns all ctx keys plus config', () => {
     const env = makeEnv();
     const { deps } = makeDeps();
 
@@ -90,12 +107,15 @@ describe('buildContext', () => {
         'automation',
         'clock',
         'config',
+        'deviceModel',
         'deviceQueueRepo',
         'deviceRegistration',
         'eventBus',
         'expenseRecorder',
         'jobDispatcher',
+        'lease',
         'logger',
+        'owner',
         'procurement',
         'reportRepo',
         'secretResolver'
