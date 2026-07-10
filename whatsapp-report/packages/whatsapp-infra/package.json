@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@julio/whatsapp": "0.1.0",
+    "@julio/automation": "*",
     "@julio/api": "*",
     "@julio/shared": "*",
     "@julio/config": "*",
