@@ -20,6 +20,10 @@ const schema = defineSchema({
   WHATSAPP_TEAM_APP_ID: rules.optionalString(),
   WHATSAPP_APK_URL: rules.optionalString(),
 
+  DUOPLUS_API_KEY: rules.optionalString(),
+  DUOPLUS_API_BASE_URL: rules.optionalString('https://openapi.duoplus.net'),
+  DUOPLUS_MIN_DELAY_MS: rules.optionalNumber(1100),
+
   WHATSAPP_MCP_HTTP_PORT: rules.optionalNumber(7300),
   WHATSAPP_MCP_AUTH_TOKEN: rules.optionalString(),
 
@@ -61,7 +65,12 @@ export function loadWhatsappEnv(env = process.env) {
     // Grouped config the composition root consumes.
     pool: { threshold: poolThreshold, buyBatchSize },
     procurement: { apiKey: darkShoppingApiKey, baseUrl: darkShoppingBaseUrl },
-    device: { whatsappTeamAppId, proxy: null }
+    device: { whatsappTeamAppId, proxy: null },
+    duoplus: {
+      apiKey: cfg.DUOPLUS_API_KEY,
+      baseUrl: cfg.DUOPLUS_API_BASE_URL,
+      minDelayMs: cfg.DUOPLUS_MIN_DELAY_MS
+    }
   };
 }
 

@@ -35,4 +35,28 @@ describe('loadWhatsappEnv', () => {
     expect(cfg.procurement).toEqual({ apiKey: 'k', baseUrl: 'https://dark.example' });
     expect(cfg.device).toEqual({ whatsappTeamAppId: 'team-1', proxy: null });
   });
+
+  it('groups DuoPlus creds with defaults for the composition root', () => {
+    const cfg = loadWhatsappEnv({});
+
+    expect(cfg.duoplus).toEqual({
+      apiKey: undefined,
+      baseUrl: 'https://openapi.duoplus.net',
+      minDelayMs: 1100
+    });
+  });
+
+  it('reads DuoPlus creds from the environment', () => {
+    const cfg = loadWhatsappEnv({
+      DUOPLUS_API_KEY: 'dp-key',
+      DUOPLUS_API_BASE_URL: 'https://duoplus.example',
+      DUOPLUS_MIN_DELAY_MS: '2000'
+    });
+
+    expect(cfg.duoplus).toEqual({
+      apiKey: 'dp-key',
+      baseUrl: 'https://duoplus.example',
+      minDelayMs: 2000
+    });
+  });
 });
