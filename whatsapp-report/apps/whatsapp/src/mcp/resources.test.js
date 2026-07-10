@@ -98,6 +98,33 @@ describe('buildResources', () => {
     await expect(read('whatsapp://accounts/missing')).rejects.toThrow('NOT_FOUND');
   });
 
+  it('read(whatsapp://accounts/<id>) maps a Mongoose CastError to NOT_FOUND (not a generic error)', async () => {
+    const { read } = buildResources(
+      makeCtx({
+        accountRepo: {
+          countAvailable: async () => 7,
+          find: async () => {
+            throw Object.assign(new Error('cast'), { name: 'CastError' });
+          }
+        }
+      })
+    );
+    await expect(read('whatsapp://accounts/not-a-valid-objectid')).rejects.toThrow('NOT_FOUND');
+  });
+
+  it('read(whatsapp://campaigns/<id>) maps a Mongoose CastError to NOT_FOUND (not a generic error)', async () => {
+    const { read } = buildResources(
+      makeCtx({
+        reportRepo: {
+          findCampaign: async () => {
+            throw Object.assign(new Error('cast'), { name: 'CastError' });
+          }
+        }
+      })
+    );
+    await expect(read('whatsapp://campaigns/not-a-valid-objectid')).rejects.toThrow('NOT_FOUND');
+  });
+
   it('read(whatsapp://campaigns/c1) returns the campaign', async () => {
     const { read } = buildResources(makeCtx());
     await expect(read('whatsapp://campaigns/c1')).resolves.toEqual({ _id: 'c1', status: 'active' });

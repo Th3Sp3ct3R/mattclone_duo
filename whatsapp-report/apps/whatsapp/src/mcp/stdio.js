@@ -33,7 +33,7 @@ export async function startStdio({
 } = {}) {
   const ctx = buildCtx();
   const core = createCore(ctx);
-  bridge({ eventBus: ctx.eventBus, server: core.server });
+  bridge({ eventBus: ctx.eventBus, server: core.server, logger: ctx.logger });
   await core.attachTransport(new TransportClass());
   return core;
 }

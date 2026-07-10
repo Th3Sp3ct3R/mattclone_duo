@@ -61,7 +61,7 @@ export async function createHttpApp(
   app.use(bearerAuth(expectedToken));
 
   const core = createCore(ctx);
-  bridge({ eventBus: ctx.eventBus, server: core.server });
+  bridge({ eventBus: ctx.eventBus, server: core.server, logger: ctx.logger });
   const transport = new TransportClass({ sessionIdGenerator: sessionId });
   await core.attachTransport(transport);
 

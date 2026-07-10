@@ -1,4 +1,4 @@
-import { bearerAuth } from './streamable-http.js';
+import { bearerAuth, createHttpApp } from './streamable-http.js';
 
 // We unit-test the security-critical, deterministic part: the bearer-auth
 // middleware. The full StreamableHTTP transport needs a live MCP client to
@@ -84,5 +84,28 @@ describe('bearerAuth', () => {
     expect(res.code).toBe(401);
     expect(res.body.code).toBe('UNAUTHORIZED');
     expect(next.calls).toHaveLength(0);
+  });
+});
+
+describe('createHttpApp notification bridge', () => {
+  class FakeTransport {}
+
+  it('threads ctx.logger into bridgeNotifications so dead-transport failures are observable', async () => {
+    const logger = { error() {}, info() {} };
+    const ctx = { eventBus: { subscribe() {} }, logger };
+    const core = { server: {}, attachTransport: async () => {} };
+    const bridgeCalls = [];
+
+    await createHttpApp(ctx, {
+      expectedToken: 'secret-token',
+      createCore: () => core,
+      bridge: (args) => bridgeCalls.push(args),
+      TransportClass: FakeTransport,
+      sessionId: () => 'session-1'
+    });
+
+    expect(bridgeCalls).toHaveLength(1);
+    expect(bridgeCalls[0]).toEqual({ eventBus: ctx.eventBus, server: core.server, logger });
+    expect(bridgeCalls[0].logger).toBe(logger);
   });
 });

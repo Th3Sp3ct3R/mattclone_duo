@@ -38,6 +38,18 @@ export function publicDevice(q) {
   };
 }
 
+// A malformed id (e.g. non-24-hex) makes Mongoose throw a CastError while casting
+// the query. That is a client mistake, not an infra failure, so translate it to
+// NOT_FOUND (→ InvalidParams) instead of letting it collapse to a generic InternalError.
+async function loadOrCastNotFound(load, id) {
+  try {
+    return await load();
+  } catch (err) {
+    if (err?.name === 'CastError') throw domainError('NOT_FOUND', `invalid or unknown id: ${id}`);
+    throw err;
+  }
+}
+
 export function buildResources(ctx) {
   async function read(uri) {
     if (uri === 'whatsapp://pool/summary') {
@@ -53,15 +65,17 @@ export function buildResources(ctx) {
 
     const campaignMatch = /^whatsapp:\/\/campaigns\/(.+)$/.exec(uri);
     if (campaignMatch) {
-      const campaign = await ctx.reportRepo.findCampaign(campaignMatch[1]);
-      if (!campaign) throw domainError('NOT_FOUND', `unknown campaign ${campaignMatch[1]}`);
+      const id = campaignMatch[1];
+      const campaign = await loadOrCastNotFound(() => ctx.reportRepo.findCampaign(id), id);
+      if (!campaign) throw domainError('NOT_FOUND', `unknown campaign ${id}`);
       return campaign;
     }
 
     const accountMatch = /^whatsapp:\/\/accounts\/(.+)$/.exec(uri);
     if (accountMatch) {
-      const [doc] = await ctx.accountRepo.find({ _id: accountMatch[1] });
-      if (!doc) throw domainError('NOT_FOUND', `unknown account ${accountMatch[1]}`);
+      const id = accountMatch[1];
+      const [doc] = await loadOrCastNotFound(() => ctx.accountRepo.find({ _id: id }), id);
+      if (!doc) throw domainError('NOT_FOUND', `unknown account ${id}`);
       return publicAccount(doc);
     }
 

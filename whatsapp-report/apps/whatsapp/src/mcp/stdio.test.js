@@ -5,7 +5,8 @@ import { startStdio } from './stdio.js';
 class FakeTransport {}
 
 function makeFakes() {
-  const ctx = { eventBus: { subscribe() {} } };
+  const logger = { error() {}, info() {} };
+  const ctx = { eventBus: { subscribe() {} }, logger };
   const attached = [];
   const core = {
     server: {},
@@ -30,7 +31,7 @@ function makeFakes() {
 }
 
 describe('startStdio', () => {
-  it('bridges notifications once with { eventBus, server }', async () => {
+  it('bridges notifications once with { eventBus, server, logger }', async () => {
     const f = makeFakes();
     await startStdio({
       buildCtx: f.buildCtx,
@@ -39,7 +40,13 @@ describe('startStdio', () => {
       TransportClass: f.TransportClass
     });
     expect(f.bridgeCalls).toHaveLength(1);
-    expect(f.bridgeCalls[0]).toEqual({ eventBus: f.ctx.eventBus, server: f.core.server });
+    expect(f.bridgeCalls[0]).toEqual({
+      eventBus: f.ctx.eventBus,
+      server: f.core.server,
+      logger: f.ctx.logger
+    });
+    // The logger must be threaded through so dead-transport failures are observable.
+    expect(f.bridgeCalls[0].logger).toBe(f.ctx.logger);
   });
 
   it('attaches exactly one transport that is an instance of the injected TransportClass', async () => {
