@@ -9,6 +9,7 @@
     "start": "node ./src/orchestrator.js",
     "mcp:stdio": "node ./src/mcp/stdio.js",
     "mcp:http": "node ./src/mcp/streamable-http.js",
+    "build": "node -e \"console.log('whatsapp-app: no build step')\"",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js --passWithNoTests",
     "lint": "eslint ."
   },
