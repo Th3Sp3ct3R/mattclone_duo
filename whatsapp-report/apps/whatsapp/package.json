@@ -19,10 +19,12 @@
     "@julio/config": "*",
     "@julio/logger": "0.1.0",
     "@julio/shared": "*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "node-cron": "^3.0.3",
     "amqplib": "^0.10.4",
     "ioredis": "^5.4.1",
-    "mongoose": "^8.7.0"
+    "mongoose": "^8.7.0",
+    "yup": "^1.4.0"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
