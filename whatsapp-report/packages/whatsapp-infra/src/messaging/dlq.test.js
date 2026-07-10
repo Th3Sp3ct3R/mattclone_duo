@@ -61,6 +61,33 @@ describe('consumeJsonWithDlq', () => {
     expect(logger.errors[0].meta).toEqual({ queue: queueName, code: 'X' });
   });
 
+  it('re-throws the ORIGINAL error and logs when the DLQ publish itself fails', async () => {
+    const consumeJson = fakeConsumeJson();
+    const publishJson = async () => { throw new Error('broker down'); };
+    const logger = fakeLogger();
+    const handler = async () => { throw Object.assign(new Error('boom'), { permanent: true, code: 'X' }); };
+    consumeJsonWithDlq(queueName, handler, { publishJson, consumeJson, clock, logger });
+
+    // Original error is re-thrown (not silently lost) so Mongo re-delivery retries.
+    await expect(consumeJson.wrapped()({ taskId: 't1' })).rejects.toThrow('boom');
+
+    const failLog = logger.errors.find((e) => e.msg === 'dlq publish failed');
+    expect(failLog).toBeDefined();
+    expect(failLog.meta).toEqual({
+      queue: queueName,
+      code: 'X',
+      reason: 'boom',
+      publishError: 'broker down'
+    });
+  });
+
+  it('forwards a caller-supplied prefetch (and requeueOnError) to consumeJson', () => {
+    const consumeJson = fakeConsumeJson();
+    const publishJson = fakePublishJson();
+    consumeJsonWithDlq(queueName, async () => {}, { publishJson, consumeJson, clock, prefetch: 5 });
+    expect(consumeJson.calls[0].opts).toEqual({ prefetch: 5, requeueOnError: false });
+  });
+
   it('terminal error (attempts exhausted) dead-letters', async () => {
     const consumeJson = fakeConsumeJson();
     const publishJson = fakePublishJson();

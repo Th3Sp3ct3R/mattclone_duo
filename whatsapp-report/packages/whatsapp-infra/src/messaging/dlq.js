@@ -17,6 +17,8 @@ const isTerminal = (error, maxAttempts) => {
 
 export function consumeJsonWithDlq(queueName, handler, {
   maxAttempts = 3,
+  prefetch = 1,
+  requeueOnError = false,
   publishJson,
   consumeJson,
   clock = { now: () => new Date() },
@@ -32,17 +34,32 @@ export function consumeJsonWithDlq(queueName, handler, {
         throw error;
       }
       const code = error.code ?? null;
-      await publishJson(`${queueName}.dlq`, {
-        reason: error.message,
-        code,
-        payload,
-        failedAt: clock.now().toISOString()
-      });
-      logger?.error?.('job dead-lettered', { queue: queueName, code });
-      // Swallow: returning normally lets the underlying consumer ACK the
-      // original message. It's now recorded in the `.dlq`.
+      try {
+        await publishJson(`${queueName}.dlq`, {
+          reason: error.message,
+          code,
+          payload,
+          failedAt: clock.now().toISOString()
+        });
+        logger?.error?.('job dead-lettered', { queue: queueName, code });
+        // Swallow: returning normally lets the underlying consumer ACK the
+        // original message. It's now recorded in the `.dlq`.
+        return;
+      } catch (publishErr) {
+        // The DLQ publish itself failed (e.g. broker down). Do NOT silently lose
+        // the message: log loudly and re-throw the ORIGINAL error so the
+        // underlying consumer nack-drops it and Mongo re-delivery retries the
+        // handler (and the DLQ publish) once the broker recovers.
+        logger?.error?.('dlq publish failed', {
+          queue: queueName,
+          code,
+          reason: error.message,
+          publishError: publishErr.message
+        });
+        throw error;
+      }
     }
   };
 
-  return consumeJson(queueName, wrapped, { prefetch: 1 });
+  return consumeJson(queueName, wrapped, { prefetch, requeueOnError });
 }
