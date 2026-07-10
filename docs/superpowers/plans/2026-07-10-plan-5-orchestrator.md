@@ -30,6 +30,11 @@
 - **Clock seam:** pass `bareClock(systemClock)` (Plan 2) into domain functions that take `{ clock }`.
 - **Service queues** (design §10): `whatsapp.buy`, `whatsapp.queue-fill`, `whatsapp.bring-online`, `whatsapp.probe`, `whatsapp.replace`, `whatsapp.report`.
 
+## Contracts inherited from Plan 2 (MUST honor — verified by Plan 2's final review)
+
+1. **DLQ handler contract.** `consumeJsonWithDlq` (Plan 2) only dead-letters when the handler **throws** an error flagged terminal (`error.permanent === true` OR `error.attempts >= error.maxAttempts`), and only re-drives transient throws via the Mongo ledger. But the engine's `runEngineJob` **swallows** handler errors (it writes `failed`/`queued` to `EngineJobRun` and does NOT re-throw). So a naïve `consumeJsonWithDlq(q, payload => runEngineJob(payload, real))` would NEVER dead-letter and NEVER re-throw. **Each Plan 5 job handler must:** (a) let the ledger own transient retry (record `queued` + `nextRetryAt`), and (b) on attempts-exhaustion re-throw a terminal error carrying `{ attempts, maxAttempts }` (or `permanent:true`) so the DLQ wrapper fires. Add an explicit test that a terminal handler outcome lands in `<queue>.dlq`. Pass a per-queue `prefetch` through `consumeJsonWithDlq` (Plan 2 supports it).
+2. **One version-bump per save.** The Mongo repos opt-lock on `version - 1`, assuming exactly ONE domain mutation between load and save. **Handlers MUST persist after each single domain transition** (e.g. save after `assignToDevice`, then load-mutate-save again for `transition`) — composing two bumps before one `save` produces a false `CONFLICT`. When a handler loads an aggregate, map `_id → id` and remember the loaded `version`; feed the domain via `bareClock(systemClock)`.
+
 **File structure:**
 - `whatsapp-report/apps/whatsapp/package.json`, `jest.config.js`; modify root `jest.config.js`, root `package.json` (script)
 - `src/config/env.js` (+ test)
