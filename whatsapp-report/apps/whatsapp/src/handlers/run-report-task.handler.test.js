@@ -149,28 +149,26 @@ describe('runReportTaskHandler', () => {
     expect(calls.release).toHaveLength(0);
   });
 
-  it('marks the task failed(report-not-confirmed) and releases the lease when the report is not confirmed', async () => {
+  it('marks the task failed(report-not-confirmed), releases the lease, then throws to retry when the report is not confirmed', async () => {
     const { ctx, calls } = makeCtx({ reportTarget: async () => ({ ok: false }) });
 
-    const result = await runReportTaskHandler(PAYLOAD, ctx);
+    await expect(runReportTaskHandler(PAYLOAD, ctx)).rejects.toThrow('REPORT_NOT_CONFIRMED');
 
-    expect(result).toEqual({ ok: false });
-
+    // Still marked failed before the throw.
     expect(calls.markTask).toEqual([['t1', 'failed', 'report-not-confirmed']]);
 
     // Not a ban: no account save, no event.
     expect(calls.saves).toHaveLength(0);
     expect(calls.publish).toHaveLength(0);
 
+    // The throw is inside the try, so finally still releases the lease.
     expect(calls.release).toEqual([['d1', OWNER]]);
   });
 
-  it('skips with device-busy when the lease is not claimed, never reporting or releasing', async () => {
+  it('throws device-busy when the lease is not claimed, never reporting or releasing (retriable)', async () => {
     const { ctx, calls } = makeCtx({ claim: async () => null });
 
-    const result = await runReportTaskHandler(PAYLOAD, ctx);
-
-    expect(result).toEqual({ skipped: true, reason: 'device-busy' });
+    await expect(runReportTaskHandler(PAYLOAD, ctx)).rejects.toThrow('DEVICE_BUSY');
 
     expect(calls.reportTarget).toHaveLength(0);
     expect(calls.markTask).toHaveLength(0);

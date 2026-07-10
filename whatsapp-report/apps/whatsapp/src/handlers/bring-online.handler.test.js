@@ -94,12 +94,10 @@ describe('bringOnlineHandler', () => {
     expect(calls.publish).toHaveLength(0);
   });
 
-  it('skips with device-busy when the lease is not claimed and never releases', async () => {
+  it('throws device-busy when the lease is not claimed and never releases (retriable)', async () => {
     const { ctx, calls } = makeCtx({ claim: async () => null });
 
-    const result = await bringOnlineHandler({ deviceId: 'd1', accountId: 'a1' }, ctx);
-
-    expect(result).toEqual({ skipped: true, reason: 'device-busy' });
+    await expect(bringOnlineHandler({ deviceId: 'd1', accountId: 'a1' }, ctx)).rejects.toThrow('DEVICE_BUSY');
     expect(calls.saves).toHaveLength(0);
     expect(calls.release).toHaveLength(0);
   });

@@ -1,11 +1,13 @@
-import { transition, accountBanned } from '@julio/whatsapp';
+import { transition, accountBanned, domainError } from '@julio/whatsapp';
 import { bareClock } from '@julio/whatsapp-infra';
 import { toDomainAccount } from './map.js';
 
 export async function bringOnlineHandler(payload, ctx) {
   const { deviceId, accountId } = payload;
   const leased = await ctx.lease.claim(deviceId, ctx.owner);
-  if (!leased) return { skipped: true, reason: 'device-busy' };
+  // Retriable: another owner holds the device now. Throw (transient) so runJob
+  // re-queues instead of marking the run succeeded and dropping the work.
+  if (!leased) throw domainError('DEVICE_BUSY', `device ${deviceId} busy`);
   const clock = bareClock(ctx.clock);
   try {
     const [acctDoc] = await ctx.accountRepo.find({ _id: accountId });

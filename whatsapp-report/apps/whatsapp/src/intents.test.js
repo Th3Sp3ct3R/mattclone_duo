@@ -36,24 +36,24 @@ describe('dispatchIntents', () => {
     expect(opts).toEqual({ idempotencyKey: 'fill:d1:2026-07-10T09' });
   });
 
-  it('maps a bring-online intent onto whatsapp.bring-online keyed by account', async () => {
+  it('maps a bring-online intent onto whatsapp.bring-online keyed by account + bucket', async () => {
     const jobDispatcher = fakeDispatcher();
     await dispatchIntents([{ type: 'bring-online', deviceId: 'd1', accountId: 'a1' }], { jobDispatcher, clock });
 
     const { queue, job, opts } = jobDispatcher.calls[0];
     expect(queue).toBe('whatsapp.bring-online');
     expect(job).toEqual({ jobName: 'bring-online', payload: { deviceId: 'd1', accountId: 'a1' } });
-    expect(opts).toEqual({ idempotencyKey: 'online:a1' });
+    expect(opts).toEqual({ idempotencyKey: 'online:a1:2026-07-10T09' });
   });
 
-  it('maps an evict intent onto whatsapp.replace keyed by account', async () => {
+  it('maps an evict intent onto whatsapp.replace keyed by account + bucket', async () => {
     const jobDispatcher = fakeDispatcher();
     await dispatchIntents([{ type: 'evict', deviceId: 'd1', accountId: 'a2' }], { jobDispatcher, clock });
 
     const { queue, job, opts } = jobDispatcher.calls[0];
     expect(queue).toBe('whatsapp.replace');
     expect(job).toEqual({ jobName: 'replace-banned', payload: { deviceId: 'd1', accountId: 'a2' } });
-    expect(opts).toEqual({ idempotencyKey: 'evict:a2' });
+    expect(opts).toEqual({ idempotencyKey: 'evict:a2:2026-07-10T09' });
   });
 
   it('fans an expand-reports intent out into one dispatch per task', async () => {
@@ -72,7 +72,7 @@ describe('dispatchIntents', () => {
         jobName: 'run-report-task',
         payload: { campaignId: task.campaignId, accountId: task.accountId, targetMsisdn: task.targetMsisdn }
       });
-      expect(opts).toEqual({ idempotencyKey: reportTaskKey(task) });
+      expect(opts).toEqual({ idempotencyKey: `${reportTaskKey(task)}:2026-07-10T09` });
     }
   });
 

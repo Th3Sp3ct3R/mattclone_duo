@@ -35,7 +35,7 @@ export async function dispatchIntents(intents, { jobDispatcher, clock }) {
           await jobDispatcher.dispatch(
             'whatsapp.bring-online',
             { jobName: 'bring-online', payload: { deviceId: intent.deviceId, accountId: intent.accountId } },
-            { idempotencyKey: `online:${intent.accountId}` }
+            { idempotencyKey: `online:${intent.accountId}:${bucket}` }
           )
         );
         break;
@@ -45,7 +45,7 @@ export async function dispatchIntents(intents, { jobDispatcher, clock }) {
           await jobDispatcher.dispatch(
             'whatsapp.replace',
             { jobName: 'replace-banned', payload: { deviceId: intent.deviceId, accountId: intent.accountId } },
-            { idempotencyKey: `evict:${intent.accountId}` }
+            { idempotencyKey: `evict:${intent.accountId}:${bucket}` }
           )
         );
         break;
@@ -63,7 +63,7 @@ export async function dispatchIntents(intents, { jobDispatcher, clock }) {
                   targetMsisdn: task.targetMsisdn
                 }
               },
-              { idempotencyKey: reportTaskKey(task) }
+              { idempotencyKey: `${reportTaskKey(task)}:${bucket}` }
             )
           );
         }

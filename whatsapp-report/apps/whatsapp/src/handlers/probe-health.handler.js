@@ -1,11 +1,13 @@
-import { transition, recordProbe, accountBanned } from '@julio/whatsapp';
+import { transition, recordProbe, accountBanned, domainError } from '@julio/whatsapp';
 import { bareClock } from '@julio/whatsapp-infra';
 import { toDomainAccount } from './map.js';
 
 export async function probeHealthHandler(payload, ctx) {
   const { accountId, deviceId } = payload;
   const leased = await ctx.lease.claim(deviceId, ctx.owner);
-  if (!leased) return { skipped: true, reason: 'device-busy' };
+  // Retriable: another owner holds the device now. Throw (transient) so runJob
+  // re-queues instead of marking the run succeeded and dropping the probe.
+  if (!leased) throw domainError('DEVICE_BUSY', `device ${deviceId} busy`);
   const clock = bareClock(ctx.clock);
   try {
     const [acctDoc] = await ctx.accountRepo.find({ _id: accountId });

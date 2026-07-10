@@ -110,12 +110,10 @@ describe('probeHealthHandler', () => {
     expect(calls.release).toEqual([['d1', OWNER]]);
   });
 
-  it('skips with device-busy when the lease is not claimed and never probes or releases', async () => {
+  it('throws device-busy when the lease is not claimed and never probes or releases (retriable)', async () => {
     const { ctx, calls } = makeCtx({ claim: async () => null });
 
-    const result = await probeHealthHandler({ accountId: 'a1', deviceId: 'd1' }, ctx);
-
-    expect(result).toEqual({ skipped: true, reason: 'device-busy' });
+    await expect(probeHealthHandler({ accountId: 'a1', deviceId: 'd1' }, ctx)).rejects.toThrow('DEVICE_BUSY');
     expect(calls.saves).toHaveLength(0);
     expect(calls.probe).toHaveLength(0);
     expect(calls.release).toHaveLength(0);

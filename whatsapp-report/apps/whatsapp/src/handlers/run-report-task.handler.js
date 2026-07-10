@@ -1,4 +1,4 @@
-import { transition, accountBanned, reportDone } from '@julio/whatsapp';
+import { transition, accountBanned, reportDone, domainError } from '@julio/whatsapp';
 import { bareClock } from '@julio/whatsapp-infra';
 import { toDomainAccount } from './map.js';
 
@@ -22,7 +22,9 @@ export async function runReportTaskHandler(payload, ctx) {
   }
 
   const leased = await ctx.lease.claim(deviceId, ctx.owner);
-  if (!leased) return { skipped: true, reason: 'device-busy' };
+  // Retriable: another owner holds the device now. Throw (transient, BEFORE the
+  // try) so runJob re-queues; nothing was leased, so no release is owed.
+  if (!leased) throw domainError('DEVICE_BUSY', `device ${deviceId} busy`);
   try {
     const device = await ctx.deviceModel.findById(deviceId).lean();
     const acct = toDomainAccount(acctDoc);
@@ -44,8 +46,11 @@ export async function runReportTaskHandler(payload, ctx) {
       await ctx.eventBus.publish(reportDone({ campaignId, accountId, targetMsisdn }, { clock }));
       return { ok: true };
     }
+    // Retriable: the report was not confirmed on-device. Mark the task failed,
+    // then throw (transient, INSIDE the try so finally releases the lease) so
+    // runJob re-queues instead of marking the run succeeded and dropping it.
     await ctx.reportRepo.markTask(task._id, 'failed', 'report-not-confirmed');
-    return { ok: false };
+    throw domainError('REPORT_NOT_CONFIRMED', `report for ${accountId}→${targetMsisdn} not confirmed`);
   } finally {
     await ctx.lease.release(deviceId, ctx.owner);
   }
