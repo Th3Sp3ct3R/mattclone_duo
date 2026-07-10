@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node --watch ./src/orchestrator.js",
     "start": "node ./src/orchestrator.js",
+    "mcp:stdio": "node ./src/mcp/stdio.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js --passWithNoTests",
     "lint": "eslint ."
   },
