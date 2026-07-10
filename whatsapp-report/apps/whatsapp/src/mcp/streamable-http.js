@@ -13,6 +13,7 @@
 // called. Tests exercise the auth middleware in isolation with fakes.
 import crypto from 'node:crypto';
 import express from 'express';
+import helmet from 'helmet';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { getAuthTokenFromRequest } from '@julio/api/utils/auth';
 import { buildContext } from '../composition.js';
@@ -52,6 +53,9 @@ export async function createHttpApp(
 ) {
   const app = express();
   app.disable('x-powered-by');
+  // Secure HTTP headers on EVERY response (REQUIREM §4.6/§7.5). Mounted first so
+  // even the unauthenticated /health probe carries the hardened header set.
+  app.use(helmet());
   app.use(express.json());
 
   // Unauthenticated liveness probe — safe to expose, reveals nothing.

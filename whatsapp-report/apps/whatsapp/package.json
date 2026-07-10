@@ -24,6 +24,7 @@
     "@julio/shared": "*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^4.19.2",
+    "helmet": "^7.2.0",
     "node-cron": "^3.0.3",
     "amqplib": "^0.10.4",
     "ioredis": "^5.4.1",

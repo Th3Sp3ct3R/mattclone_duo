@@ -1,3 +1,4 @@
+import http from 'node:http';
 import { bearerAuth, createHttpApp } from './streamable-http.js';
 
 // We unit-test the security-critical, deterministic part: the bearer-auth
@@ -84,6 +85,50 @@ describe('bearerAuth', () => {
     expect(res.code).toBe(401);
     expect(res.body.code).toBe('UNAUTHORIZED');
     expect(next.calls).toHaveLength(0);
+  });
+});
+
+describe('createHttpApp secure headers (helmet)', () => {
+  // Integration-style: boot the real Express app (with fakes for core/transport
+  // so no Mongo/RabbitMQ/real transport is touched) and hit /health over a real
+  // socket. Helmet is mounted FIRST, so its headers must appear on EVERY route,
+  // including the unauthenticated health probe.
+  function fakeCtx() {
+    return { eventBus: { subscribe() {} }, logger: { error() {}, info() {} } };
+  }
+
+  it('applies helmet security headers to the /health response', async () => {
+    const app = await createHttpApp(fakeCtx(), {
+      expectedToken: 't',
+      createCore: () => ({ server: {}, attachTransport: async () => {} }),
+      bridge: () => {},
+      TransportClass: class {
+        constructor() {}
+        async handleRequest() {}
+      },
+      sessionId: () => 'session-1'
+    });
+
+    const server = app.listen(0);
+    try {
+      await new Promise((resolve) => server.once('listening', resolve));
+      const { port } = server.address();
+
+      const res = await new Promise((resolve, reject) => {
+        http
+          .get({ host: '127.0.0.1', port, path: '/health' }, (r) => {
+            r.resume();
+            resolve(r);
+          })
+          .on('error', reject);
+      });
+
+      expect(res.statusCode).toBe(200);
+      // A representative helmet default header — proves helmet() is mounted.
+      expect(res.headers['x-content-type-options']).toBe('nosniff');
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });
 
