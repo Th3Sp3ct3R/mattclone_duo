@@ -9,6 +9,7 @@
   },
   "scripts": {
     "lint": "eslint .",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js",
     "build": "node -e \"console.log('integrations: no build step')\""
   },
   "dependencies": {

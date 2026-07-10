@@ -1,5 +1,6 @@
 export { IntegrationHttpClient } from './http-client.js';
 export { DjekxaClient } from './djekxa-client.js';
+export { DarkShoppingClient, createDarkShoppingClient } from './dark-shopping-client.js';
 export { DjekxaImporter, parseCredentialFile } from './djekxa-importer.js';
 export { LlmClient, createOpenRouterClient } from './llm-client.js';
 export { EmailCodeFetcher, extractVerificationCode } from './email-code.js';

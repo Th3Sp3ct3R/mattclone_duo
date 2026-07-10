@@ -11,7 +11,7 @@ export class IntegrationHttpClient {
     return this.baseUrl ? `${this.baseUrl}/${suffix}` : `/${suffix}`;
   }
 
-  async request(path, { method = 'GET', body = null, headers = {} } = {}) {
+  async request(path, { method = 'GET', body = null, headers = {}, signal = undefined } = {}) {
     const response = await this.fetchImpl(this.buildUrl(path), {
       method,
       headers: {
@@ -20,7 +20,8 @@ export class IntegrationHttpClient {
         ...this.headers,
         ...headers
       },
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
+      signal
     });
     const text = await response.text();
     const contentType = response.headers?.get?.('content-type') || '';
