@@ -1,4 +1,4 @@
-import { assignToDevice, transition, enqueueWaiting } from '@julio/whatsapp';
+import { assignToDevice, transition, enqueueWaiting, poolLow } from '@julio/whatsapp';
 import { bareClock } from '@julio/whatsapp-infra';
 import { toDomainAccount, toDomainQueue } from './map.js';
 
@@ -20,6 +20,13 @@ export async function fillQueueHandler(payload, ctx) {
     queue = enqueueWaiting(queue, acct.id);          // single bump
     await ctx.deviceQueueRepo.save(queue);
     filled += 1;
+  }
+  // Low-latency fast-path: filling may have drained the pool below the threshold.
+  // Announce pool.low so the reconciler/brain reacts immediately (rather than
+  // waiting for the next periodic reconcile tick).
+  const available = await ctx.accountRepo.countAvailable();
+  if (available < ctx.config.poolThreshold) {
+    await ctx.eventBus.publish(poolLow({ available }, { clock }));
   }
   return { filled };
 }

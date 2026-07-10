@@ -3,9 +3,17 @@ import { fillQueueHandler } from './fill-queue.handler.js';
 const fixedClock = { now: () => new Date('2026-07-09T00:00:00.000Z') };
 
 function makeCtx(over = {}) {
-  const calls = { accountSaves: [], queueSaves: [] };
+  const { countAvailable, ...ctxOver } = over;
+  const calls = { accountSaves: [], queueSaves: [], publish: [] };
+  const countAvailableFn = countAvailable ?? (async () => 50);
   const ctx = {
     clock: fixedClock,
+    config: { poolThreshold: 10 },
+    eventBus: {
+      publish: async (evt) => {
+        calls.publish.push(evt);
+      }
+    },
     deviceQueueRepo: {
       find: async (deviceId) => {
         if (deviceId !== 'd1') return null;
@@ -35,11 +43,12 @@ function makeCtx(over = {}) {
           version: 0
         }
       ],
+      countAvailable: async () => countAvailableFn(),
       save: async (account) => {
         calls.accountSaves.push(account);
       }
     },
-    ...over
+    ...ctxOver
   };
   return { ctx, calls };
 }
@@ -69,6 +78,25 @@ describe('fillQueueHandler', () => {
     expect(calls.queueSaves).toHaveLength(1);
     expect(calls.queueSaves[0].waitingAccountIds).toEqual(['a1']);
     expect(calls.queueSaves[0].version).toBe(1);
+  });
+
+  it('publishes pool.low (fast-path) when the pool drops below threshold after filling', async () => {
+    const { ctx, calls } = makeCtx({ countAvailable: async () => 2 });
+
+    const result = await fillQueueHandler({ deviceId: 'd1', count: 1 }, ctx);
+
+    expect(result).toEqual({ filled: 1 });
+    const low = calls.publish.find((e) => e.type === 'pool.low');
+    expect(low).toBeDefined();
+    expect(low.payload).toEqual({ available: 2 });
+  });
+
+  it('does not publish pool.low when the pool is at or above threshold', async () => {
+    const { ctx, calls } = makeCtx({ countAvailable: async () => 50 });
+
+    await fillQueueHandler({ deviceId: 'd1', count: 1 }, ctx);
+
+    expect(calls.publish.some((e) => e.type === 'pool.low')).toBe(false);
   });
 
   it('returns { filled: 0, reason: "no-queue" } when the device has no queue', async () => {
