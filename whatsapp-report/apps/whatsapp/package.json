@@ -13,6 +13,7 @@
   "dependencies": {
     "@julio/whatsapp": "0.1.0",
     "@julio/whatsapp-infra": "0.1.0",
+    "@julio/validation": "*",
     "@julio/integrations": "*",
     "@julio/device-control": "*",
     "@julio/api": "*",
