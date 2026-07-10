@@ -7,17 +7,21 @@
 // XML — NOT that a given label/resource-id/coordinate is correct on a real
 // device. Re-capture the real UI (getUIDump/screenshot) and reconcile
 // constants.js before trusting reportTarget in production.
-import { findByResourceId, findElement, getAllText, parseUIDump } from '@julio/device-control';
+import { findByResourceId, findElement, findElementExact, getAllText, parseUIDump } from '@julio/device-control';
 import { domainError } from '@julio/whatsapp';
 
 import { createHumanActor } from '../human-actor.js';
 import {
   WHATSAPP_BAN_TEXTS,
+  WHATSAPP_BLOCK_REPORT_TEXTS,
   WHATSAPP_DISMISS_TEXTS,
   WHATSAPP_HOME_TEXTS,
   WHATSAPP_LAUNCHER_ACTIVITY,
   WHATSAPP_OVERFLOW_FALLBACK_POINT,
+  WHATSAPP_OVERFLOW_RESOURCE_IDS,
+  WHATSAPP_OVERFLOW_TEXTS,
   WHATSAPP_PACKAGE,
+  WHATSAPP_REPORT_CONFIRM_TEXTS,
   WHATSAPP_REPORT_FALLBACK_POINT,
   WHATSAPP_REPORT_TEXTS
 } from './constants.js';
@@ -37,14 +41,12 @@ async function dismissPopups(controller, actor = null, rounds = 3) {
   }
 }
 
-// Selector-first, else provisional coordinate: try each selector as a
-// resource-id, then as substring text; only tap the fallback point when the
-// screen exposes neither. The point path is the fragile, verify-by-fact branch.
-async function tapSelectorOrPoint(controller, actor, els, selectors, point) {
-  const target =
-    selectors.map((selector) => findByResourceId(els, selector)).find(Boolean) ||
-    findElement(els, ...selectors);
-  if (target) return actor.tapElement(target);
+// Tap a resolved element, or the provisional fallback point when it wasn't
+// found. The point branch is the fragile, verify-by-fact path — and because a
+// blind fallback tap proves nothing, success is NOT inferred from it (see the
+// confirmation gate in reportTarget).
+async function tapElementOrPoint(controller, actor, element, point) {
+  if (element) return actor.tapElement(element);
   await controller.tap(point.x, point.y);
   await actor.pause();
   return false;
@@ -70,6 +72,7 @@ export async function checkWhatsappState(controller) {
 export async function reportTarget(controller, { targetMsisdn, alsoBlock = false } = {}) {
   const actor = createHumanActor({ controller });
   const digits = String(targetMsisdn).replace(/[^0-9]/g, '');
+  if (!digits) throw domainError('WHATSAPP_REPORT_TARGET_INVALID', 'targetMsisdn required');
 
   // Open the target's chat via a wa.me deep link — robust vs. fragile in-app
   // search, and it works whether or not the number is a saved contact.
@@ -80,23 +83,29 @@ export async function reportTarget(controller, { targetMsisdn, alsoBlock = false
 
   if (detectBanScreen(await elements(controller))) return { ok: false, banned: true };
 
-  // Open the overflow menu (selector-first, provisional point otherwise).
-  await tapSelectorOrPoint(
-    controller,
-    actor,
-    await elements(controller),
-    ['com.whatsapp:id/menuitem_overflow', 'More options'],
-    WHATSAPP_OVERFLOW_FALLBACK_POINT
-  );
+  // Open the overflow menu: resource-id first, then label, else provisional point.
+  const overflowEls = await elements(controller);
+  const overflow =
+    WHATSAPP_OVERFLOW_RESOURCE_IDS.map((id) => findByResourceId(overflowEls, id)).find(Boolean) ||
+    findElement(overflowEls, ...WHATSAPP_OVERFLOW_TEXTS);
+  await tapElementOrPoint(controller, actor, overflow, WHATSAPP_OVERFLOW_FALLBACK_POINT);
 
-  // Tap Report — prefer the "Report and block" label when alsoBlock is set.
-  const reportSelectors = alsoBlock ? ['Report and block', ...WHATSAPP_REPORT_TEXTS] : WHATSAPP_REPORT_TEXTS;
-  await tapSelectorOrPoint(controller, actor, await elements(controller), reportSelectors, WHATSAPP_REPORT_FALLBACK_POINT);
+  // Tap the Report menu item. Use an EXACT match so a plain "Report" doesn't
+  // substring-hit "Report and block"/"Report business"; prefer the block label
+  // when alsoBlock. Fall back to substring only if no exact item is present.
+  const reportLabels = alsoBlock ? [...WHATSAPP_BLOCK_REPORT_TEXTS, ...WHATSAPP_REPORT_TEXTS] : WHATSAPP_REPORT_TEXTS;
+  const reportEls = await elements(controller);
+  const reportItem = findElementExact(reportEls, ...reportLabels) || findElement(reportEls, ...reportLabels);
+  await tapElementOrPoint(controller, actor, reportItem, WHATSAPP_REPORT_FALLBACK_POINT);
 
-  // A ban can surface mid-flow (opening the chat or the menu can trip it).
-  if (detectBanScreen(await elements(controller))) return { ok: false, banned: true };
-
-  return { ok: true };
+  // Confirmation gate: claim success ONLY when WhatsApp shows a confirmation
+  // screen — never from a blind fallback tap (a false "reported" makes callers
+  // stop retrying). A ban can also surface mid-flow (opening the chat/menu can
+  // trip it). WHATSAPP_REPORT_CONFIRM_TEXTS is a verify-by-fact seed.
+  const confirmEls = await elements(controller);
+  if (detectBanScreen(confirmEls)) return { ok: false, banned: true };
+  if (findElement(confirmEls, ...WHATSAPP_REPORT_CONFIRM_TEXTS)) return { ok: true };
+  return { ok: false };
 }
 
 // SESSION-IMPORT SEAM — intentionally unimplemented. Bringing an account online

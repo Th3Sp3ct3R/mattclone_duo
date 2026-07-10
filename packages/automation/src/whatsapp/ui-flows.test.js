@@ -75,7 +75,7 @@ describe('reportTarget', () => {
         dump('Type a message'), // ban-check after opening chat
         dump('More options'), // overflow menu selector
         dump('Report and block'), // report action
-        dump('Reported. Messages archived.') // post-report, no ban
+        dump('Reported. Messages archived.') // confirmation screen (contains "Reported")
       ]
     });
 
@@ -102,6 +102,30 @@ describe('reportTarget', () => {
     expect(controller.shell).toHaveBeenCalledTimes(1); // deep link only
     expect(controller.tap).not.toHaveBeenCalled(); // did not proceed into the menu/report
   }, 30_000);
+
+  it('does NOT claim success when the final screen shows neither ban nor confirmation', async () => {
+    const controller = makeController({
+      dumps: [
+        dump('Type a message'), // chat opened, no ban
+        dump('More options'), // overflow menu selector present
+        dump('Report and block'), // report action present → tapped
+        dump('Loading...') // no confirmation, no ban → must NOT be a false success
+      ]
+    });
+
+    const result = await reportTarget(controller, { targetMsisdn: '+491700000001', alsoBlock: true });
+
+    expect(result).toEqual({ ok: false });
+    expect(result.banned).toBeUndefined();
+    // the report flow WAS attempted (menu/report taps happened) — it just wasn't confirmed.
+    expect(controller.tap).toHaveBeenCalled();
+  }, 30_000);
+
+  it('rejects an empty/non-numeric target before touching the device', async () => {
+    const controller = makeController({ single: HOME_XML });
+    await expect(reportTarget(controller, { targetMsisdn: '+++' })).rejects.toThrow('WHATSAPP_REPORT_TARGET_INVALID');
+    expect(controller.shell).not.toHaveBeenCalled();
+  });
 });
 
 describe('bringWhatsappOnline (session-import seam)', () => {

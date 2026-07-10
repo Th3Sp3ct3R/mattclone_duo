@@ -14,6 +14,13 @@ export const WHATSAPP_BAN_TEXTS = [
   'Your phone number is banned from using WhatsApp'
 ];
 export const WHATSAPP_REPORT_TEXTS = ['Report', 'Report contact', 'Report and block', 'Report business'];
+export const WHATSAPP_BLOCK_REPORT_TEXTS = ['Report and block'];
+// Confirmation-screen signatures — success is claimed ONLY when one of these is
+// visible (see ui-flows reportTarget). VERIFY-BY-FACT seeds like the rest.
+export const WHATSAPP_REPORT_CONFIRM_TEXTS = ['Reported', 'Thanks for letting us know', 'You reported', 'Report sent'];
+// Overflow (⋮) menu openers: prefer the resource-id, fall back to the label.
+export const WHATSAPP_OVERFLOW_RESOURCE_IDS = ['com.whatsapp:id/menuitem_overflow'];
+export const WHATSAPP_OVERFLOW_TEXTS = ['More options'];
 export const WHATSAPP_DISMISS_TEXTS = ['OK', 'Continue', 'Not now', 'Allow', 'Cancel', 'Agree and continue'];
 
 // Provisional fallback tap points (portrait) — used only when a selector isn't found.
