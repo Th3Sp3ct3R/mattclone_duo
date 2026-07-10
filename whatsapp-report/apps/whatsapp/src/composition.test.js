@@ -4,8 +4,17 @@ function makeEnv() {
   return {
     redisUrl: 'redis://x',
     logLevel: 'info',
-    procurement: { apiKey: 'k', baseUrl: 'b' },
-    device: { whatsappTeamAppId: 'wa', proxy: null },
+    procurement: {
+      apiKey: 'k',
+      baseUrl: 'b',
+      expectedUnitUsdCents: 120,
+      maxTotalUsdCents: 5000,
+      priceDriftTolerance: 0.05
+    },
+    device: {
+      whatsappTeamAppId: 'wa',
+      proxy: { host: 'ph', port: 9090, user: 'pu', password: 'pp' }
+    },
     duoplus: { apiKey: 'd', baseUrl: 'u', minDelayMs: 1100 },
     pool: { threshold: 10, buyBatchSize: 5 },
     deviceTargetDepth: 3,
@@ -179,7 +188,12 @@ describe('buildContext', () => {
     expect(calls.createDarkShoppingClient).toEqual({ apiKey: 'k', baseUrl: 'b' });
     expect(calls.createDarkShoppingProcurementAdapter.client).toBe('createDarkShoppingClient:result');
     expect(calls.createDarkShoppingProcurementAdapter.importer).toEqual({ importDelivered });
-    expect(calls.createDarkShoppingProcurementAdapter.config).toEqual({ deliveryFormatVerified: false });
+    expect(calls.createDarkShoppingProcurementAdapter.config).toEqual({
+      deliveryFormatVerified: false,
+      expectedUnitUsdCents: 120,
+      maxTotalUsdCents: 5000,
+      priceDriftTolerance: 0.05
+    });
   });
 
   it('wires the duoplus device registration with team app id and proxy', () => {
@@ -190,7 +204,12 @@ describe('buildContext', () => {
 
     expect(calls.DuoplusClient).toEqual({ apiKey: 'd', baseUrl: 'u', minDelayMs: 1100 });
     expect(calls.createDuoplusDeviceRegistrationAdapter.config.whatsappTeamAppId).toBe('wa');
-    expect(calls.createDuoplusDeviceRegistrationAdapter.config.proxy).toBeNull();
+    expect(calls.createDuoplusDeviceRegistrationAdapter.config.proxy).toEqual({
+      host: 'ph',
+      port: 9090,
+      user: 'pu',
+      password: 'pp'
+    });
     expect(calls.createDuoplusDeviceRegistrationAdapter.client.__isDuoplusClient).toBe(true);
   });
 

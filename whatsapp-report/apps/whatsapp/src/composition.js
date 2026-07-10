@@ -60,8 +60,16 @@ export function buildContext({ env, deps = {} } = {}) {
   const procurement = D.createDarkShoppingProcurementAdapter({
     client: darkShoppingClient,
     importer: { importDelivered: D.importDelivered },
-    // Gated until the real dark.shopping delivery format is captured & verified.
-    config: { deliveryFormatVerified: false }
+    // Price guards are operator-configurable via env. The buy path stays blocked
+    // until WHATSAPP_EXPECTED_UNIT_USD_CENTS is set (adapter throws
+    // PROCUREMENT_PRICE_DRIFT otherwise) AND the delivery format is verified —
+    // deliveryFormatVerified is the separate go-live gate, still forced false here.
+    config: {
+      deliveryFormatVerified: false,
+      expectedUnitUsdCents: env.procurement.expectedUnitUsdCents,
+      maxTotalUsdCents: env.procurement.maxTotalUsdCents,
+      priceDriftTolerance: env.procurement.priceDriftTolerance
+    }
   });
 
   const duoplusClient = new D.DuoplusClient({
