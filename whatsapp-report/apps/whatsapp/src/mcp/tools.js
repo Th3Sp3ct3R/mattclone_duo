@@ -82,6 +82,10 @@ export function buildTools(ctx) {
       yupSchema: deviceEnrollSchema,
       handler: async (args) => {
         const v = await validateArgs(deviceEnrollSchema, args);
+        // Provision (install WhatsApp team-APK + proxy) BEFORE creating the queue.
+        // A coded provisioning failure (e.g. WHATSAPP_TEAM_APP_NOT_FOUND) aborts the
+        // tool fail-safe, so we never enqueue work for a device that cannot report.
+        await ctx.deviceRegistration.ensureReady({ providerDeviceId: v.deviceId });
         return ctx.deviceQueueRepo.ensureQueue(v.deviceId, v.targetDepth);
       }
     },

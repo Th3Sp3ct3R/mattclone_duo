@@ -2,7 +2,7 @@ import { REPORT_STRATEGIES } from '@julio/whatsapp';
 import { buildTools } from './tools.js';
 
 function makeCtx(over = {}) {
-  const calls = { dispatch: [], createCampaign: [], setCampaignStatus: [], ensureQueue: [], save: [], find: [] };
+  const calls = { dispatch: [], createCampaign: [], setCampaignStatus: [], ensureQueue: [], ensureReady: [], order: [], save: [], find: [] };
   const ctx = {
     accountRepo: {
       countAvailable: async () => 7,
@@ -14,9 +14,16 @@ function makeCtx(over = {}) {
         calls.save.push(acct);
       }
     },
+    deviceRegistration: {
+      ensureReady: async (device) => {
+        calls.ensureReady.push(device);
+        calls.order.push('ensureReady');
+      }
+    },
     deviceQueueRepo: {
       ensureQueue: async (deviceId, targetDepth) => {
         calls.ensureQueue.push({ deviceId, targetDepth });
+        calls.order.push('ensureQueue');
         return { deviceId, targetDepth };
       },
       find: async (deviceId) => ({ deviceId }),
@@ -107,11 +114,27 @@ describe('buildTools', () => {
     await expect(tool.handler({ quantity: 5, extra: 1 })).rejects.toThrow('MCP_ARGS_INVALID');
   });
 
-  it('device.enroll validates then calls ensureQueue', async () => {
+  it('device.enroll provisions the device (ensureReady) before creating its queue', async () => {
     const { ctx, calls } = makeCtx();
     const tool = byName(buildTools(ctx), 'device.enroll');
     await tool.handler({ deviceId: 'd1', targetDepth: 3 });
+    expect(calls.ensureReady).toEqual([{ providerDeviceId: 'd1' }]);
     expect(calls.ensureQueue).toEqual([{ deviceId: 'd1', targetDepth: 3 }]);
+    // Provision THEN create the queue.
+    expect(calls.order).toEqual(['ensureReady', 'ensureQueue']);
+  });
+
+  it('device.enroll aborts (no queue created) when provisioning fails', async () => {
+    const { ctx, calls } = makeCtx({
+      deviceRegistration: {
+        ensureReady: async () => {
+          throw new Error('WHATSAPP_TEAM_APP_NOT_FOUND');
+        }
+      }
+    });
+    const tool = byName(buildTools(ctx), 'device.enroll');
+    await expect(tool.handler({ deviceId: 'd1', targetDepth: 3 })).rejects.toThrow('WHATSAPP_TEAM_APP_NOT_FOUND');
+    expect(calls.ensureQueue).toHaveLength(0);
   });
 
   it('campaign.create validates then calls createCampaign', async () => {
