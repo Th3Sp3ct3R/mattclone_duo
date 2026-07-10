@@ -4,6 +4,7 @@ import {
   WHATSAPP_QUEUES,
   registerConsumers,
   republishRetries,
+  scheduleProbes,
   main
 } from './orchestrator.js';
 
@@ -223,6 +224,65 @@ describe('republishRetries', () => {
 
   test('WHATSAPP_QUEUES mirrors the HANDLERS queue names', () => {
     expect(WHATSAPP_QUEUES).toEqual(HANDLERS.map((h) => h.queue));
+  });
+});
+
+describe('scheduleProbes', () => {
+  test('dispatches an hourly-bucketed probe per assigned online/cooldown account', async () => {
+    const clock = { now: () => new Date('2026-07-11T09:00:00Z') };
+
+    let findArg;
+    const accountRepo = {
+      find: async (q) => {
+        findArg = q;
+        return [
+          { _id: 'a1', status: 'online', assignedDeviceId: 'd1' },
+          { _id: 'a2', status: 'cooldown', assignedDeviceId: 'd2' },
+          { _id: 'a3', status: 'online', assignedDeviceId: null }
+        ];
+      }
+    };
+
+    const dispatchCalls = [];
+    const jobDispatcher = {
+      dispatch: async (...args) => {
+        dispatchCalls.push(args);
+      }
+    };
+
+    const ctx = { accountRepo, jobDispatcher, clock };
+
+    const dispatched = await scheduleProbes(ctx);
+
+    // Query targets only online/cooldown accounts.
+    expect(findArg).toEqual({ status: { $in: ['online', 'cooldown'] } });
+
+    // a3 skipped (no assigned device) -> 2 dispatches, returns 2.
+    expect(dispatched).toBe(2);
+    expect(dispatchCalls).toEqual([
+      [
+        'whatsapp.probe',
+        { jobName: 'probe-health', payload: { accountId: 'a1', deviceId: 'd1' } },
+        { idempotencyKey: 'probe:a1:2026-07-11T09' }
+      ],
+      [
+        'whatsapp.probe',
+        { jobName: 'probe-health', payload: { accountId: 'a2', deviceId: 'd2' } },
+        { idempotencyKey: 'probe:a2:2026-07-11T09' }
+      ]
+    ]);
+  });
+
+  test('dispatches nothing when there are no online/cooldown accounts', async () => {
+    const clock = { now: () => new Date('2026-07-11T09:00:00Z') };
+    const accountRepo = { find: async () => [] };
+    const dispatchCalls = [];
+    const jobDispatcher = { dispatch: async (...args) => dispatchCalls.push(args) };
+
+    const dispatched = await scheduleProbes({ accountRepo, jobDispatcher, clock });
+
+    expect(dispatched).toBe(0);
+    expect(dispatchCalls).toEqual([]);
   });
 });
 

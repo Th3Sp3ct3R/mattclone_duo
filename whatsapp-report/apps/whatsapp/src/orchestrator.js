@@ -88,6 +88,25 @@ export async function republishRetries(ctx, { publish = publishJson, model = Eng
   return due.length;
 }
 
+// Design Flow D: schedule health probes for online/cooldown accounts (proactive ban detection).
+export async function scheduleProbes(ctx) {
+  const accounts = await ctx.accountRepo.find({ status: { $in: ['online', 'cooldown'] } });
+  const bucket = ctx.clock.now().toISOString().slice(0, 13); // hourly
+  let dispatched = 0;
+  for (const a of accounts) {
+    const accountId = String(a._id ?? a.id);
+    const deviceId = a.assignedDeviceId != null ? String(a.assignedDeviceId) : null;
+    if (!deviceId) continue; // can't probe an unassigned account
+    await ctx.jobDispatcher.dispatch(
+      'whatsapp.probe',
+      { jobName: 'probe-health', payload: { accountId, deviceId } },
+      { idempotencyKey: `probe:${accountId}:${bucket}` }
+    );
+    dispatched += 1;
+  }
+  return dispatched;
+}
+
 // 3) Register consumers — testable with injected fakes.
 export async function registerConsumers(
   ctx,
@@ -148,6 +167,14 @@ export async function main(overrides = {}) {
     );
   });
 
+  // Probe-scheduling cron (Design Flow D): proactively probe online/cooldown
+  // accounts so bans are caught before a job hits them, not only reactively.
+  const probeTask = cron.schedule(e.probeCron, () => {
+    scheduleProbes(ctx).catch((err) =>
+      ctx.logger?.error?.('probe scheduling failed', { error: err.message })
+    );
+  });
+
   // Retry-republish cron (every minute, like the engine's job-retry cron): our
   // consumers nack-drop transient failures, so re-deliver due queued job runs.
   const retryTask = cron.schedule('* * * * *', () => {
@@ -172,6 +199,7 @@ export async function main(overrides = {}) {
   async function shutdown(signal) {
     ctx.logger?.info?.('[whatsapp] shutting down', { signal });
     task.stop();
+    probeTask.stop();
     retryTask.stop();
     try {
       await releaseLeasesByOwner(EngineDevice, { owner: ctx.owner });
@@ -186,7 +214,7 @@ export async function main(overrides = {}) {
   process.on('SIGINT', () => shutdown('SIGINT').then(() => process.exit(0)));
   process.on('SIGTERM', () => shutdown('SIGTERM').then(() => process.exit(0)));
 
-  return { ctx, task, retryTask };
+  return { ctx, task, probeTask, retryTask };
 }
 
 // Guarded direct-run entrypoint: only run when executed directly, not when
