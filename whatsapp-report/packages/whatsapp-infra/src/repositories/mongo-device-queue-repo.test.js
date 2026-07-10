@@ -5,6 +5,7 @@ function fakeModel(returns = {}) {
   return {
     calls,
     findOne: (filter) => { calls.push({ findOneFilter: filter }); return { lean: () => (returns.findOne ?? null) }; },
+    find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; },
     findOneAndUpdate: (filter, update, options) => { calls.push({ filter, update, options }); return returns.findOneAndUpdate; }
   };
 }
@@ -18,6 +19,15 @@ describe('MongoDeviceQueueRepo', () => {
     const found = await repo.find('d1');
     expect(model.calls[0].findOneFilter).toEqual({ deviceId: 'd1' });
     expect(found).toEqual({ deviceId: 'd1' });
+  });
+
+  it('listAll returns every queue (lean) with an empty filter', async () => {
+    const queues = [{ deviceId: 'd1' }, { deviceId: 'd2' }];
+    const model = fakeModel({ find: queues });
+    const repo = createMongoDeviceQueueRepo({ model });
+    const all = await repo.listAll();
+    expect(model.calls[0].findFilter).toEqual({});
+    expect(all).toEqual(queues);
   });
 
   it('save opt-locks on version-1 and $sets the bumped version', async () => {
