@@ -1,4 +1,4 @@
-import { transition, accountBanned, reportDone, domainError } from '@julio/whatsapp';
+import { transition, accountBanned, reportDone, campaignCompleted, domainError } from '@julio/whatsapp';
 import { bareClock } from '@julio/whatsapp-infra';
 import { toDomainAccount } from './map.js';
 
@@ -44,6 +44,13 @@ export async function runReportTaskHandler(payload, ctx) {
     if (result?.ok) {
       await ctx.reportRepo.markTask(task._id, 'done');
       await ctx.eventBus.publish(reportDone({ campaignId, accountId, targetMsisdn }, { clock }));
+      // Was that the campaign's last open task? If so, close it out and announce
+      // completion so the orchestrator/brain can react (the previously-dead
+      // campaign.completed subscription).
+      if (!(await ctx.reportRepo.hasOpenTasks(campaignId))) {
+        await ctx.reportRepo.setCampaignStatus(campaignId, 'completed');
+        await ctx.eventBus.publish(campaignCompleted({ campaignId }, { clock }));
+      }
       return { ok: true };
     }
     // Retriable: the report was not confirmed on-device. Mark the task failed,

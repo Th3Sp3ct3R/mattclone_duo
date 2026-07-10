@@ -34,6 +34,9 @@ export function createMongoReportRepo({
         { upsert: true, new: true }
       );
     },
+    async hasOpenTasks(campaignId) {
+      return Boolean(await taskModel.exists({ campaignId, status: { $ne: 'done' } }));
+    },
     async markTask(id, status, error = '') {
       return taskModel.findOneAndUpdate(
         { _id: id },

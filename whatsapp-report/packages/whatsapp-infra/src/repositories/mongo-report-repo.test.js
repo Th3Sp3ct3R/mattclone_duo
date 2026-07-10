@@ -19,7 +19,8 @@ function fakeTaskModel(returns = {}) {
   return {
     calls,
     find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; },
-    findOneAndUpdate: (filter, update, options) => { calls.push({ filter, update, options }); return returns.findOneAndUpdate; }
+    findOneAndUpdate: (filter, update, options) => { calls.push({ filter, update, options }); return returns.findOneAndUpdate; },
+    exists: (filter) => { calls.push({ existsFilter: filter }); return returns.exists ?? null; }
   };
 }
 
@@ -80,6 +81,22 @@ describe('MongoReportRepo', () => {
     expect(update).toEqual({ $set: { status: 'paused' } });
     expect(options).toEqual({ new: true });
     expect(updated).toEqual({ _id: 'c1', status: 'paused' });
+  });
+
+  it('hasOpenTasks returns true when an open task exists (filters status $ne done)', async () => {
+    const taskModel = fakeTaskModel({ exists: { _id: 't1' } });
+    const repo = createMongoReportRepo({ campaignModel: fakeCampaignModel(), taskModel });
+    const open = await repo.hasOpenTasks('c1');
+    expect(taskModel.calls[0].existsFilter).toEqual({ campaignId: 'c1', status: { $ne: 'done' } });
+    expect(open).toBe(true);
+  });
+
+  it('hasOpenTasks returns false when no open task exists (exists null)', async () => {
+    const taskModel = fakeTaskModel({ exists: null });
+    const repo = createMongoReportRepo({ campaignModel: fakeCampaignModel(), taskModel });
+    const open = await repo.hasOpenTasks('c1');
+    expect(taskModel.calls[0].existsFilter).toEqual({ campaignId: 'c1', status: { $ne: 'done' } });
+    expect(open).toBe(false);
   });
 
   it('markTask sets status/lastError and increments attempts', async () => {

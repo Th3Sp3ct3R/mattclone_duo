@@ -19,7 +19,7 @@ function makeAccountDoc(over = {}) {
   };
 }
 
-function makeCtx({ task, reportTarget, claim, accountDoc } = {}) {
+function makeCtx({ task, reportTarget, claim, accountDoc, hasOpenTasks } = {}) {
   const calls = {
     upsert: [],
     markTask: [],
@@ -27,12 +27,15 @@ function makeCtx({ task, reportTarget, claim, accountDoc } = {}) {
     claim: [],
     release: [],
     publish: [],
-    reportTarget: []
+    reportTarget: [],
+    hasOpenTasks: [],
+    setCampaignStatus: []
   };
   const taskDoc = task === undefined ? { _id: 't1', status: 'pending' } : task;
   const reportTargetFn = reportTarget ?? (async () => ({ ok: true }));
   const claimFn = claim ?? (async () => ({ deviceId: 'd1' }));
   const acctDoc = accountDoc === undefined ? makeAccountDoc() : accountDoc;
+  const hasOpenTasksFn = hasOpenTasks ?? (async () => true);
 
   const ctx = {
     owner: OWNER,
@@ -44,6 +47,13 @@ function makeCtx({ task, reportTarget, claim, accountDoc } = {}) {
       },
       markTask: async (id, status, error) => {
         calls.markTask.push([id, status, error]);
+      },
+      hasOpenTasks: async (campaignId) => {
+        calls.hasOpenTasks.push(campaignId);
+        return hasOpenTasksFn(campaignId);
+      },
+      setCampaignStatus: async (id, status) => {
+        calls.setCampaignStatus.push([id, status]);
       }
     },
     accountRepo: {
@@ -87,8 +97,8 @@ function makeCtx({ task, reportTarget, claim, accountDoc } = {}) {
 }
 
 describe('runReportTaskHandler', () => {
-  it('marks the task done, emits report.done, and releases the lease on a confirmed report', async () => {
-    const { ctx, calls } = makeCtx({ reportTarget: async () => ({ ok: true }) });
+  it('marks the task done, emits report.done, and releases the lease on a confirmed report (campaign still has open tasks)', async () => {
+    const { ctx, calls } = makeCtx({ reportTarget: async () => ({ ok: true }), hasOpenTasks: async () => true });
 
     const result = await runReportTaskHandler(PAYLOAD, ctx);
 
@@ -110,8 +120,33 @@ describe('runReportTaskHandler', () => {
     expect(calls.publish[0].type).toBe('report.done');
     expect(calls.publish[0].payload).toEqual({ campaignId: 'c1', accountId: 'a1', targetMsisdn: '+491700000001' });
 
+    // Open tasks remain -> campaign not completed, status untouched.
+    expect(calls.hasOpenTasks).toEqual(['c1']);
+    expect(calls.setCampaignStatus).toHaveLength(0);
+
     // Lease claimed then released.
     expect(calls.claim).toEqual([['d1', OWNER]]);
+    expect(calls.release).toEqual([['d1', OWNER]]);
+  });
+
+  it('completes the campaign (setCampaignStatus + campaign.completed) when the last task is done', async () => {
+    const { ctx, calls } = makeCtx({ reportTarget: async () => ({ ok: true }), hasOpenTasks: async () => false });
+
+    const result = await runReportTaskHandler(PAYLOAD, ctx);
+
+    expect(result).toEqual({ ok: true });
+    expect(calls.markTask).toEqual([['t1', 'done', undefined]]);
+
+    // No open tasks left -> campaign marked completed.
+    expect(calls.hasOpenTasks).toEqual(['c1']);
+    expect(calls.setCampaignStatus).toEqual([['c1', 'completed']]);
+
+    // report.done first, then campaign.completed.
+    expect(calls.publish).toHaveLength(2);
+    expect(calls.publish[0].type).toBe('report.done');
+    expect(calls.publish[1].type).toBe('campaign.completed');
+    expect(calls.publish[1].payload).toEqual({ campaignId: 'c1' });
+
     expect(calls.release).toEqual([['d1', OWNER]]);
   });
 
