@@ -9,7 +9,9 @@
     "./models/*": "./src/models/*.model.js",
     "./repositories/*": "./src/repositories/*.js",
     "./messaging/*": "./src/messaging/*.js",
-    "./procurement/*": "./src/procurement/*.js"
+    "./procurement/*": "./src/procurement/*.js",
+    "./device/*": "./src/device/*.js",
+    "./automation/*": "./src/automation/*.js"
   },
   "scripts": {
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js",

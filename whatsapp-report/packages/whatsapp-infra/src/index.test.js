@@ -8,7 +8,8 @@ describe('@julio/whatsapp-infra public surface', () => {
       'createMongoAccountRepo', 'createMongoDeviceQueueRepo', 'createMongoReportRepo',
       'consumeJsonWithDlq', 'createRabbitJobDispatcher', 'createRabbitRedisEventBus',
       'createKeychainEnvSecretResolver',
-      'createDarkShoppingProcurementAdapter', 'createExpenseRecorder'
+      'createDarkShoppingProcurementAdapter', 'createExpenseRecorder',
+      'createDuoplusDeviceRegistrationAdapter', 'createWhatsappAutomationAdapter'
     ]) {
       expect(typeof infra[name]).toBe('function');
     }

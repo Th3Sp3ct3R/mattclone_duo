@@ -13,3 +13,5 @@ export * from './secrets/keychain-env-secret-resolver.js';
 export * from './clock/system-clock.js';
 export * from './procurement/dark-shopping-procurement-adapter.js';
 export * from './procurement/expense-recorder.js';
+export * from './device/duoplus-device-registration-adapter.js';
+export * from './automation/whatsapp-automation-adapter.js';
