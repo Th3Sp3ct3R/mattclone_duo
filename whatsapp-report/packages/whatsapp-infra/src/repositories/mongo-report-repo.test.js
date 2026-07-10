@@ -1,0 +1,69 @@
+import { reportTaskKey } from '@julio/whatsapp';
+import { createMongoReportRepo } from './mongo-report-repo.js';
+
+function fakeCampaignModel(returns = {}) {
+  const calls = [];
+  return {
+    calls,
+    findById: (id) => { calls.push({ findById: id }); return { lean: () => (returns.findById ?? null) }; },
+    find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; }
+  };
+}
+function fakeTaskModel(returns = {}) {
+  const calls = [];
+  return {
+    calls,
+    find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; },
+    findOneAndUpdate: (filter, update, options) => { calls.push({ filter, update, options }); return returns.findOneAndUpdate; }
+  };
+}
+
+describe('MongoReportRepo', () => {
+  it('findCampaign loads a campaign by id (lean)', async () => {
+    const campaignModel = fakeCampaignModel({ findById: { id: 'c1' } });
+    const repo = createMongoReportRepo({ campaignModel, taskModel: fakeTaskModel() });
+    const found = await repo.findCampaign('c1');
+    expect(campaignModel.calls[0].findById).toBe('c1');
+    expect(found).toEqual({ id: 'c1' });
+  });
+
+  it('listActiveCampaigns filters on status active (lean)', async () => {
+    const campaignModel = fakeCampaignModel({ find: [{ id: 'c1' }] });
+    const repo = createMongoReportRepo({ campaignModel, taskModel: fakeTaskModel() });
+    const list = await repo.listActiveCampaigns();
+    expect(campaignModel.calls[0].findFilter).toEqual({ status: 'active' });
+    expect(list).toEqual([{ id: 'c1' }]);
+  });
+
+  it('doneKeys returns a Set of domain reportTaskKey strings', async () => {
+    const task = { campaignId: 'c1', accountId: 'a1', targetMsisdn: '+491700000001', status: 'done' };
+    const taskModel = fakeTaskModel({ find: [task] });
+    const repo = createMongoReportRepo({ campaignModel: fakeCampaignModel(), taskModel });
+    const keys = await repo.doneKeys('c1');
+    expect(taskModel.calls[0].findFilter).toEqual({ campaignId: 'c1', status: 'done' });
+    expect(keys).toBeInstanceOf(Set);
+    expect(keys.has(reportTaskKey({ campaignId: 'c1', accountId: 'a1', targetMsisdn: '+491700000001' }))).toBe(true);
+  });
+
+  it('upsertTask is exactly-once: upsert + $setOnInsert on the unique triple', async () => {
+    const taskModel = fakeTaskModel({ findOneAndUpdate: { _id: 't1' } });
+    const repo = createMongoReportRepo({ campaignModel: fakeCampaignModel(), taskModel });
+    await repo.upsertTask({ campaignId: 'c1', accountId: 'a1', targetMsisdn: '+491700000001' });
+    const { filter, update, options } = taskModel.calls[0];
+    expect(filter).toEqual({ campaignId: 'c1', accountId: 'a1', targetMsisdn: '+491700000001' });
+    expect(update.$setOnInsert.status).toBe('pending');
+    expect(update.$setOnInsert.campaignId).toBe('c1');
+    expect(options).toEqual({ upsert: true, new: true });
+  });
+
+  it('markTask sets status/lastError and increments attempts', async () => {
+    const taskModel = fakeTaskModel({ findOneAndUpdate: { _id: 't1' } });
+    const repo = createMongoReportRepo({ campaignModel: fakeCampaignModel(), taskModel });
+    await repo.markTask('t1', 'failed', 'boom');
+    const { filter, update, options } = taskModel.calls[0];
+    expect(filter).toEqual({ _id: 't1' });
+    expect(update.$set).toEqual({ status: 'failed', lastError: 'boom' });
+    expect(update.$inc).toEqual({ attempts: 1 });
+    expect(options).toEqual({ new: true });
+  });
+});
