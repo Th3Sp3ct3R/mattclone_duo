@@ -26,9 +26,20 @@
  *     --auth-header-url /api/ \
  *     --port 9222
  */
-import http from 'node:http';
-import fs from 'node:fs';
-import WebSocket from 'ws'; // ws is CommonJS; its default export is the WebSocket class
+import {
+  authorizationFromHeaders,
+  isAuthenticatedDuoPlusRequest,
+  validateDuoPlusAuthorization,
+  writeJsonAtomically
+} from '../src/utils/duoplus-session-capture.js';
+import { isReadOnlyEndpoint } from '../../../packages/device-control/src/duoplus-endpoint-inventory.js';
+import {
+  cdpRpc,
+  closeCdpPage,
+  connectCdpWebSocket,
+  openCdpPage,
+  waitForCondition
+} from './lib/cdp-client.mjs';
 
 // ── Presets ───────────────────────────────────────────────────────────────────
 const PRESETS = {
@@ -38,7 +49,9 @@ const PRESETS = {
     cookieDomains: ['suno', 'clerk'],
     loginCookie: '__session',
     tokenExpr: 'window.Clerk?.session?.getToken?.()',
-    authHeaderUrl: ''
+    authHeaderUrl: '',
+    authHeaderHost: '',
+    requireNewTab: false
   },
   duoplus: {
     // DuoPlus authenticates the internal web API with an `Authorization` header
@@ -49,8 +62,11 @@ const PRESETS = {
     cookieDomains: ['duoplus'],
     loginCookie: '',
     tokenExpr: '',
-    authHeaderUrl: 'api.duoplus.cn',
-    waitMs: 9000
+    authHeaderUrl: '',
+    authHeaderHost: 'api.duoplus.cn',
+    waitMs: 9000,
+    requireNewTab: true,
+    validateAuthorization: true
   }
 };
 
@@ -82,172 +98,169 @@ const cfg = {
   loginCookie: args['login-cookie'] || preset.loginCookie || '',
   tokenExpr: args['token-expr'] || preset.tokenExpr || '',
   authHeaderUrl: args['auth-header-url'] || preset.authHeaderUrl || '',
+  authHeaderHost: args['auth-header-host'] || preset.authHeaderHost || '',
   waitMs: Number(args['wait-ms'] || preset.waitMs || 6000),
-  localStorageKeys: args['localstorage-keys'] ? String(args['localstorage-keys']).split(',') : []
+  localStorageKeys: args['localstorage-keys'] ? String(args['localstorage-keys']).split(',') : [],
+  requireNewTab: preset.requireNewTab !== false,
+  validateAuthorization: Boolean(preset.validateAuthorization),
+  sessionSource: args.source || `chrome-cdp:${Number(args.port || 9222)}`
 };
 if (!cfg.url || !cfg.out) {
   console.error('Required: --url and --out (or --preset). See header for usage.');
   process.exit(1);
 }
 
-// ── CDP helpers ───────────────────────────────────────────────────────────────
-function cdpGet(path) {
-  return new Promise((resolve, reject) => {
-    const req = http.get(`http://127.0.0.1:${cfg.port}${path}`, (res) => {
-      let d = '';
-      res.on('data', (c) => (d += c));
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve(d); } });
-    });
-    req.on('error', reject);
-    req.setTimeout(5000, () => { req.destroy(); reject(new Error('CDP HTTP timeout — is Chrome running with --remote-debugging-port?')); });
-  });
-}
-
-function cdpPut(path) {
-  return new Promise((resolve, reject) => {
-    const req = http.request(`http://127.0.0.1:${cfg.port}${path}`, { method: 'PUT' }, (res) => {
-      let d = '';
-      res.on('data', (c) => (d += c));
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve(d); } });
-    });
-    req.on('error', reject);
-    req.setTimeout(5000, () => { req.destroy(); reject(new Error('CDP HTTP timeout')); });
-    req.end();
-  });
-}
-
-function rpc(ws, method, params = {}) {
-  return new Promise((resolve, reject) => {
-    const id = Math.floor(Math.random() * 1e9);
-    const handler = (raw) => {
-      const msg = JSON.parse(raw.toString());
-      if (msg.id === id) { ws.off('message', handler); msg.error ? reject(new Error(JSON.stringify(msg.error))) : resolve(msg.result); }
-    };
-    ws.on('message', handler);
-    ws.send(JSON.stringify({ id, method, params }));
-  });
-}
-
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   console.log(`🔐 Session capture → ${cfg.url}`);
-  // Open a DEDICATED tab (don't hijack the user's existing tabs), navigate it to the
-  // target, capture, then close it. Modern Chrome requires PUT for /json/new.
-  let tab = await cdpPut(`/json/new?${encodeURIComponent(cfg.url)}`).catch(() => null);
-  if (!tab || !tab.webSocketDebuggerUrl) {
-    tab = await cdpGet(`/json/new?${encodeURIComponent(cfg.url)}`).catch(() => null); // older Chrome
-  }
-  let closeCreatedTab = true;
-  if (!tab || !tab.webSocketDebuggerUrl) {
-    const tabs = await cdpGet('/json/list').catch(() => []);
-    tab = Array.isArray(tabs)
-      ? tabs.find((t) => t.type === 'page' && t.webSocketDebuggerUrl)
-      : null;
-    closeCreatedTab = false;
-    if (tab?.webSocketDebuggerUrl) {
-      console.log('  ↪ using existing CDP page target');
-    }
-  }
-  if (!tab || !tab.webSocketDebuggerUrl) {
-    throw new Error('Could not open or find a capture tab — is Chrome/Electron running with --remote-debugging-port?');
-  }
-  const createdTabId = tab.id;
-  const closeTab = async () => {
-    if (!closeCreatedTab) return;
-    await cdpPut(`/json/close/${createdTabId}`).catch(() => cdpGet(`/json/close/${createdTabId}`).catch(() => {}));
-  };
-  const ws = new WebSocket(tab.webSocketDebuggerUrl, { maxPayload: 50 * 1024 * 1024 });
-  await new Promise((res, rej) => { ws.on('open', res); ws.on('error', rej); });
+  const page = await openCdpPage({ port: cfg.port, url: cfg.url, requireNewTab: cfg.requireNewTab });
+  if (!page.created) console.log('  ↪ using existing CDP page target');
+  const ws = await connectCdpWebSocket(page.tab.webSocketDebuggerUrl);
 
-  // Sniff Authorization header (DuoPlus-style) if configured.
-  let sniffedAuth = '';
-  if (cfg.authHeaderUrl) {
-    await rpc(ws, 'Network.enable');
-    ws.on('message', (raw) => {
-      const m = JSON.parse(raw.toString());
-      if (m.method === 'Network.requestWillBeSent') {
-        const u = m.params?.request?.url || '';
-        const h = m.params?.request?.headers || {};
-        const auth = h.Authorization || h.authorization;
-        if (u.includes(cfg.authHeaderUrl) && auth && !sniffedAuth) {
-          sniffedAuth = String(auth);
-          console.log(`  🔑 captured Authorization header from ${cfg.authHeaderUrl} request`);
-        }
+  try {
+    let sniffedAuth = '';
+    let blockedRequestCount = 0;
+    const expectsAuthorization = Boolean(cfg.authHeaderHost || cfg.authHeaderUrl);
+    if (expectsAuthorization) {
+      await cdpRpc(ws, 'Network.enable');
+      await cdpRpc(ws, 'Network.setCacheDisabled', { cacheDisabled: true }).catch(() => {});
+      if (cfg.authHeaderHost) {
+        await cdpRpc(ws, 'Fetch.enable', {
+          patterns: [{ urlPattern: 'https://api.duoplus.cn/*', requestStage: 'Request' }]
+        });
       }
-    });
-  }
-
-  console.log('🌐 navigating...');
-  await rpc(ws, 'Page.enable');
-  await rpc(ws, 'Page.navigate', { url: cfg.url });
-  await new Promise((r) => setTimeout(r, cfg.waitMs));
-
-  // Cookies
-  const all = await rpc(ws, 'Network.getAllCookies');
-  const cookies = {};
-  for (const c of all.cookies || []) {
-    if (!cfg.cookieDomains.length || cfg.cookieDomains.some((d) => c.domain.includes(d))) {
-      cookies[c.name] = c.value;
-    }
-  }
-  console.log(`🍪 ${Object.keys(cookies).length} cookies (domains: ${cfg.cookieDomains.join(', ') || 'all'})`);
-
-  // Login detection — pick the signal that actually proves an authenticated session:
-  //   - loginCookie set   → that session cookie must be present (Suno/Clerk: __session)
-  //   - authHeaderUrl set → an Authorization header must have been sniffed (DuoPlus)
-  //   - otherwise         → fall back to "any captured cookies"
-  // (Tracking cookies on a public sign-in page must NOT count as logged-in.)
-  const loggedIn = cfg.loginCookie
-    ? Boolean(cookies[cfg.loginCookie])
-    : cfg.authHeaderUrl
-      ? Boolean(sniffedAuth)
-      : Boolean(Object.keys(cookies).length);
-
-  if (!loggedIn) {
-    console.log('❌ Not logged in yet.');
-    console.log(`   Log in manually in the Chrome window (${cfg.url}), then re-run this script.`);
-    ws.close();
-    await closeTab();
-    process.exit(2);
-  }
-
-  // Optional bearer token via JS
-  let bearer = null;
-  if (cfg.tokenExpr) {
-    try {
-      const r = await rpc(ws, 'Runtime.evaluate', {
-        expression: `(async () => { try { return await (${cfg.tokenExpr}); } catch { return null; } })()`,
-        returnByValue: true,
-        awaitPromise: true
+      ws.on('message', (raw) => {
+        let message;
+        try {
+          message = JSON.parse(raw.toString());
+        } catch {
+          return;
+        }
+        const request = message.params?.request || {};
+        if (message.method === 'Fetch.requestPaused') {
+          if (!sniffedAuth && isAuthenticatedDuoPlusRequest(request.url, request.headers)) {
+            sniffedAuth = authorizationFromHeaders(request.headers);
+            console.log(`  🔑 captured fresh Authorization from ${cfg.authHeaderHost}`);
+          }
+          const allowed = isReadOnlyEndpoint(request.url);
+          if (!allowed) blockedRequestCount += 1;
+          const method = allowed ? 'Fetch.continueRequest' : 'Fetch.failRequest';
+          const params = allowed
+            ? { requestId: message.params.requestId }
+            : { requestId: message.params.requestId, errorReason: 'BlockedByClient' };
+          cdpRpc(ws, method, params).catch(() => {});
+          return;
+        }
+        if (message.method !== 'Network.requestWillBeSent' || sniffedAuth) return;
+        const exactDuoPlusMatch = cfg.authHeaderHost
+          ? isAuthenticatedDuoPlusRequest(request.url, request.headers)
+          : false;
+        const genericMatch = cfg.authHeaderUrl
+          ? String(request.url || '').includes(cfg.authHeaderUrl) && authorizationFromHeaders(request.headers)
+          : false;
+        if (!exactDuoPlusMatch && !genericMatch) return;
+        sniffedAuth = authorizationFromHeaders(request.headers);
+        console.log(`  🔑 captured fresh Authorization from ${cfg.authHeaderHost || cfg.authHeaderUrl}`);
       });
-      bearer = r.result?.value || null;
-      console.log(bearer ? '  🔑 bearer token captured' : '  ⚠️  bearer token expr returned null');
-    } catch { console.log('  ⚠️  bearer token eval failed'); }
-  }
+    }
 
-  // Optional localStorage keys
-  const localStorageOut = {};
-  if (cfg.localStorageKeys.length) {
-    const r = await rpc(ws, 'Runtime.evaluate', {
-      expression: `JSON.stringify(Object.fromEntries(${JSON.stringify(cfg.localStorageKeys)}.map(k => [k, localStorage.getItem(k)])))`,
-      returnByValue: true
-    });
-    Object.assign(localStorageOut, JSON.parse(r.result?.value || '{}'));
-  }
+    console.log('🌐 navigating...');
+    await cdpRpc(ws, 'Page.enable');
+    await cdpRpc(ws, 'Page.navigate', { url: cfg.url });
+    if (expectsAuthorization) {
+      let captured = await waitForCondition(() => Boolean(sniffedAuth), cfg.waitMs);
+      if (!captured) {
+        console.log('  ↻ no authenticated request yet; reloading once without cache');
+        await cdpRpc(ws, 'Page.reload', { ignoreCache: true });
+        captured = await waitForCondition(() => Boolean(sniffedAuth), cfg.waitMs);
+      }
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, cfg.waitMs));
+    }
+    if (blockedRequestCount) console.log(`  🛡 blocked ${blockedRequestCount} non-read-only browser requests`);
 
-  const session = {
-    captured_at: new Date().toISOString(),
-    target: cfg.url,
-    ...(sniffedAuth ? { authorization: sniffedAuth } : {}),
-    ...(bearer ? { bearer_token: bearer } : {}),
-    ...(Object.keys(localStorageOut).length ? { localStorage: localStorageOut } : {}),
-    cookies
-  };
-  fs.writeFileSync(cfg.out, JSON.stringify(session, null, 2));
-  console.log(`✅ session written → ${cfg.out}`);
-  ws.close();
-  await closeTab();
-  process.exit(0);
+    const all = await cdpRpc(ws, 'Network.getAllCookies');
+    const cookies = {};
+    for (const cookie of all.cookies || []) {
+      if (!cfg.cookieDomains.length || cfg.cookieDomains.some((domain) => cookie.domain.includes(domain))) {
+        cookies[cookie.name] = cookie.value;
+      }
+    }
+    console.log(`🍪 ${Object.keys(cookies).length} matching cookies`);
+
+    const loggedIn = cfg.loginCookie
+      ? Boolean(cookies[cfg.loginCookie])
+      : expectsAuthorization
+        ? Boolean(sniffedAuth)
+        : Boolean(Object.keys(cookies).length);
+    if (!loggedIn) {
+      console.error('❌ No fresh authenticated request was captured; existing session file was preserved.');
+      process.exitCode = 2;
+      return;
+    }
+
+    let validation = null;
+    if (cfg.validateAuthorization) {
+      validation = await validateDuoPlusAuthorization({ authorization: sniffedAuth });
+      if (!validation.valid) {
+        console.error(`❌ Captured Authorization failed safe validation (${validation.classification}); existing session file was preserved.`);
+        process.exitCode = 3;
+        return;
+      }
+      console.log(`  ✓ validated with ${validation.endpoint} (${validation.status})`);
+    }
+
+    let bearer = null;
+    if (cfg.tokenExpr) {
+      try {
+        const result = await cdpRpc(ws, 'Runtime.evaluate', {
+          expression: `(async () => { try { return await (${cfg.tokenExpr}); } catch { return null; } })()`,
+          returnByValue: true,
+          awaitPromise: true
+        });
+        bearer = result.result?.value || null;
+        console.log(bearer ? '  🔑 bearer token captured' : '  ⚠️ bearer token expression returned null');
+      } catch {
+        console.log('  ⚠️ bearer token evaluation failed');
+      }
+    }
+
+    const localStorageOut = {};
+    if (cfg.localStorageKeys.length) {
+      const result = await cdpRpc(ws, 'Runtime.evaluate', {
+        expression: `JSON.stringify(Object.fromEntries(${JSON.stringify(cfg.localStorageKeys)}.map(k => [k, localStorage.getItem(k)])))`,
+        returnByValue: true
+      });
+      Object.assign(localStorageOut, JSON.parse(result.result?.value || '{}'));
+    }
+
+    const now = new Date().toISOString();
+    const session = {
+      captured_at: now,
+      target: cfg.url,
+      session_source: cfg.sessionSource,
+      ...(validation
+        ? {
+            authentication: {
+              provenance: 'fresh-cdp',
+              host: cfg.authHeaderHost,
+              validated_at: now,
+              validation_endpoint: validation.endpoint,
+              validation_status: validation.status
+            }
+          }
+        : {}),
+      ...(sniffedAuth ? { authorization: sniffedAuth } : {}),
+      ...(bearer ? { bearer_token: bearer } : {}),
+      ...(Object.keys(localStorageOut).length ? { localStorage: localStorageOut } : {}),
+      cookies
+    };
+    writeJsonAtomically(cfg.out, session);
+    console.log(`✅ validated session written atomically → ${cfg.out}`);
+  } finally {
+    ws.close();
+    if (page.created) await closeCdpPage(cfg.port, page.tab.id);
+  }
 }
 
 main().catch((err) => { console.error('Error:', err.message); process.exit(1); });

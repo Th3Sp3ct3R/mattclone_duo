@@ -239,6 +239,14 @@ open -a "Google Chrome" --args --remote-debugging-port=9223 \
 # (or just: yarn workspace @julio/api capture:session --preset duoplus --port 9223)
 ```
 
+For deterministic validated refresh, redacted endpoint collection, static
+comparison, and report generation, use the documented workflow in
+[`docs/duoplus-endpoint-discovery.md`](./duoplus-endpoint-discovery.md):
+
+```bash
+yarn workspace @julio/api duoplus:discover
+```
+
 ## 5. Notes / gotchas
 
 - The public OpenAPI in the repo (`cloudPhone/list`, `status`, ADB) is a

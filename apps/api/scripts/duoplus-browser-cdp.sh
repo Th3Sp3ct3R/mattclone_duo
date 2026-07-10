@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Foreground DuoPlus Chrome/CDP process for supervisors like PM2.
 # If the CDP port is already live, this process stays alive as a sentinel.
-PROFILE_DIR="${DUOPLUS_VISIBLE_PROFILE_DIR:-/Users/growthgod/.duoplus-user-profiles/user_123}"
-PORT="${DUOPLUS_VISIBLE_CDP_PORT:-9224}"
+PROFILE_DIR="${DUOPLUS_CDP_PROFILE_DIR:-$HOME/.duoplus-refresh-chrome}"
+PORT="${DUOPLUS_CDP_PORT:-9223}"
 URL="${1:-https://my.duoplus.cn/images?page=1&pagesize=10&link_status=0%2C1%2C2%2C4&group_id=all&fid=-1}"
 CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 
