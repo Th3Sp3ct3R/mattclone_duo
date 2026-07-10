@@ -6,7 +6,12 @@ function fakeCampaignModel(returns = {}) {
   return {
     calls,
     findById: (id) => { calls.push({ findById: id }); return { lean: () => (returns.findById ?? null) }; },
-    find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; }
+    find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; },
+    create: (doc) => { calls.push({ create: doc }); return returns.create ?? doc; },
+    findByIdAndUpdate: (id, update, options) => {
+      calls.push({ findByIdAndUpdate: { id, update, options } });
+      return { lean: () => (returns.findByIdAndUpdate ?? null) };
+    }
   };
 }
 function fakeTaskModel(returns = {}) {
@@ -54,6 +59,27 @@ describe('MongoReportRepo', () => {
     expect(update.$setOnInsert.status).toBe('pending');
     expect(update.$setOnInsert.campaignId).toBe('c1');
     expect(options).toEqual({ upsert: true, new: true });
+  });
+
+  it('createCampaign creates an active campaign with targets+strategy', async () => {
+    const campaignModel = fakeCampaignModel({ create: { _id: 'c1' } });
+    const repo = createMongoReportRepo({ campaignModel, taskModel: fakeTaskModel() });
+    const created = await repo.createCampaign({ targets: ['+491700000001'], strategy: 'one-target-per-account' });
+    expect(campaignModel.calls[0].create).toEqual({
+      targets: ['+491700000001'], strategy: 'one-target-per-account', status: 'active'
+    });
+    expect(created).toEqual({ _id: 'c1' });
+  });
+
+  it('setCampaignStatus updates status by id ($set, new, lean)', async () => {
+    const campaignModel = fakeCampaignModel({ findByIdAndUpdate: { _id: 'c1', status: 'paused' } });
+    const repo = createMongoReportRepo({ campaignModel, taskModel: fakeTaskModel() });
+    const updated = await repo.setCampaignStatus('c1', 'paused');
+    const { id, update, options } = campaignModel.calls[0].findByIdAndUpdate;
+    expect(id).toBe('c1');
+    expect(update).toEqual({ $set: { status: 'paused' } });
+    expect(options).toEqual({ new: true });
+    expect(updated).toEqual({ _id: 'c1', status: 'paused' });
   });
 
   it('markTask sets status/lastError and increments attempts', async () => {

@@ -21,6 +21,12 @@ export function createMongoReportRepo({
         campaignId: t.campaignId, accountId: t.accountId, targetMsisdn: t.targetMsisdn
       })));
     },
+    async createCampaign({ targets, strategy }) {
+      return campaignModel.create({ targets, strategy, status: 'active' });
+    },
+    async setCampaignStatus(id, status) {
+      return campaignModel.findByIdAndUpdate(id, { $set: { status } }, { new: true }).lean();
+    },
     async upsertTask({ campaignId, accountId, targetMsisdn }) {
       return taskModel.findOneAndUpdate(
         { campaignId, accountId, targetMsisdn },

@@ -21,6 +21,16 @@ export function createMongoDeviceQueueRepo({ model = WhatsappDeviceQueue } = {})
   return {
     async find(deviceId) { return model.findOne({ deviceId }).lean(); },
     async listAll() { return model.find({}).lean(); },
+    async ensureQueue(deviceId, targetDepth) {
+      return model.findOneAndUpdate(
+        { deviceId },
+        {
+          $set: { targetDepth },
+          $setOnInsert: { deviceId, activeSlots: 1, activeAccountIds: [], waitingAccountIds: [], version: 0 }
+        },
+        { upsert: true, new: true }
+      ).lean();
+    },
     async save(queue) {
       const previousVersion = queue.version - 1; // domain already bumped
       const updated = await model.findOneAndUpdate(
