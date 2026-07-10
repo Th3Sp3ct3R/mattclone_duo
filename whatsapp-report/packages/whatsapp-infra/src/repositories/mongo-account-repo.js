@@ -35,6 +35,18 @@ export function createMongoAccountRepo({ model = WhatsappAccount } = {}) {
       );
       if (!updated) throw conflictError(`account ${account.id} version conflict`);
       return updated;
+    },
+    async insertPurchased(accounts, { orderId } = {}) {
+      const docs = accounts.map((a) => ({
+        msisdn: a.msisdn,
+        source: a.source,
+        secretRefs: a.secretRefs ?? {},
+        status: 'purchased',
+        assignedDeviceId: null,
+        version: 0,
+        metadata: { ...(a.metadata ?? {}), orderId }
+      }));
+      return model.insertMany(docs, { ordered: false });
     }
   };
 }

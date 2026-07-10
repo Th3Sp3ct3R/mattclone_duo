@@ -13,10 +13,12 @@ const accountSchema = new mongoose.Schema({
   status:           { type: String, enum: ACCOUNT_STATUSES, default: 'purchased', index: true },
   assignedDeviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'EngineDevice', default: null, index: true },
   health:           { type: healthSchema, default: () => ({}) },
-  version:          { type: Number, default: 0 }
+  version:          { type: Number, default: 0 },
+  metadata:         { type: mongoose.Schema.Types.Mixed, default: () => ({}) }
 }, { collection: 'whatsapp_accounts', timestamps: true });
 
 accountSchema.index({ status: 1, assignedDeviceId: 1 });
+accountSchema.index({ 'metadata.orderId': 1 }, { sparse: true });
 
 export const WhatsappAccount =
   mongoose.models.WhatsappAccount || mongoose.model('WhatsappAccount', accountSchema);

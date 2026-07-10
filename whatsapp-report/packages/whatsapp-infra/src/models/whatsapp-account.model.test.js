@@ -14,4 +14,7 @@ describe('WhatsappAccount model', () => {
   it('exposes the status enum', () => {
     expect(ACCOUNT_STATUSES).toContain('online');
   });
+  it('defaults metadata to an empty object', () => {
+    expect(new WhatsappAccount({ msisdn: '+491701234567' }).metadata).toEqual({});
+  });
 });

@@ -6,7 +6,8 @@ function fakeModel(returns = {}) {
     calls,
     findOneAndUpdate: (filter, update, options) => { calls.push({ filter, update, options }); return returns.findOneAndUpdate; },
     countDocuments: (filter) => { calls.push({ countFilter: filter }); return returns.countDocuments ?? 0; },
-    find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; }
+    find: (filter) => { calls.push({ findFilter: filter }); return { lean: () => (returns.find ?? []) }; },
+    insertMany: (docs, opts) => { calls.push({ insertMany: docs, opts }); return docs; }
   };
 }
 const doc = (over = {}) => ({ id: 'a1', msisdn: '+491701234567', status: 'assigned', assignedDeviceId: 'd1',
@@ -32,5 +33,28 @@ describe('MongoAccountRepo.save (opt-lock)', () => {
     const repo = createMongoAccountRepo({ model });
     expect(await repo.countAvailable()).toBe(7);
     expect(model.calls[0].countFilter).toEqual({ status: 'purchased', assignedDeviceId: null });
+  });
+});
+
+describe('MongoAccountRepo.insertPurchased', () => {
+  it('bulk-inserts version:0 purchased accounts tagged with metadata.orderId (unordered)', async () => {
+    const model = fakeModel();
+    const repo = createMongoAccountRepo({ model });
+    await repo.insertPurchased(
+      [{ msisdn: '+491701234567', source: 'dark_shopping', secretRefs: { session: 'x' } }],
+      { orderId: 'o1' }
+    );
+    const { insertMany, opts } = model.calls[0];
+    expect(insertMany).toHaveLength(1);
+    expect(insertMany[0]).toEqual({
+      msisdn: '+491701234567',
+      source: 'dark_shopping',
+      secretRefs: { session: 'x' },
+      status: 'purchased',
+      assignedDeviceId: null,
+      version: 0,
+      metadata: { orderId: 'o1' }
+    });
+    expect(opts).toEqual({ ordered: false });
   });
 });
