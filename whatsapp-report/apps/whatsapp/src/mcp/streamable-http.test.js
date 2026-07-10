@@ -1,0 +1,88 @@
+import { bearerAuth } from './streamable-http.js';
+
+// We unit-test the security-critical, deterministic part: the bearer-auth
+// middleware. The full StreamableHTTP transport needs a live MCP client to
+// exercise, so it is intentionally out of scope here (covered by the import
+// smoke + a manual/integration run).
+//
+// The middleware uses the real `getAuthTokenFromRequest` header parser, so the
+// fake req only needs a `headers` bag; the fake res records status/json.
+function makeRes() {
+  return {
+    code: undefined,
+    body: undefined,
+    status(code) {
+      this.code = code;
+      return this;
+    },
+    json(body) {
+      this.body = body;
+      return this;
+    }
+  };
+}
+
+function makeReq(headers = {}) {
+  return { headers };
+}
+
+function makeNext() {
+  const calls = [];
+  const next = (...args) => calls.push(args);
+  next.calls = calls;
+  return next;
+}
+
+describe('bearerAuth', () => {
+  it('rejects a request with no Authorization header (401, UNAUTHORIZED, next not called)', () => {
+    const mw = bearerAuth('secret-token');
+    const req = makeReq();
+    const res = makeRes();
+    const next = makeNext();
+
+    mw(req, res, next);
+
+    expect(res.code).toBe(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
+    expect(next.calls).toHaveLength(0);
+  });
+
+  it('rejects a wrong bearer token (401, next not called)', () => {
+    const mw = bearerAuth('secret-token');
+    const req = makeReq({ authorization: 'Bearer nope' });
+    const res = makeRes();
+    const next = makeNext();
+
+    mw(req, res, next);
+
+    expect(res.code).toBe(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
+    expect(next.calls).toHaveLength(0);
+  });
+
+  it('accepts the correct bearer token (next called once, no 401)', () => {
+    const mw = bearerAuth('secret-token');
+    const req = makeReq({ authorization: 'Bearer secret-token' });
+    const res = makeRes();
+    const next = makeNext();
+
+    mw(req, res, next);
+
+    expect(next.calls).toHaveLength(1);
+    expect(res.code).toBeUndefined();
+    expect(res.body).toBeUndefined();
+  });
+
+  it('fails closed when no expected token is configured, even if a token is presented', () => {
+    const mw = bearerAuth('');
+    const req = makeReq({ authorization: 'Bearer anything' });
+    const res = makeRes();
+    const next = makeNext();
+
+    mw(req, res, next);
+
+    expect(res.code).toBe(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
+    expect(next.calls).toHaveLength(0);
+  });
+});
