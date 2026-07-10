@@ -2,9 +2,19 @@
 // DeviceRegistrationPort ({ ensureReady(device) }) over an injected DuoplusClient.
 //
 // ensureReady is idempotent: it installs the WhatsApp team-APK only when it is
-// not already present on the cloud phone, then wires the device's proxy. The
-// WhatsApp APK is NOT in the DuoPlus PUBLIC catalog — it must come from the
-// TEAM catalog (client.listTeamApps), which is why resolveTeamAppId reads there.
+// not already present on the cloud phone, then (if configured) wires the
+// device's proxy. The WhatsApp APK is NOT in the DuoPlus PUBLIC catalog — it
+// must come from the TEAM catalog (client.listTeamApps), which is why
+// resolveTeamAppId reads there.
+//
+// Proxy provisioning goes through client.setSmartIp(providerDeviceId, proxy),
+// which builds the DuoPlus initProxy payload correctly — each `images` entry
+// must be an object { image_id, ip_scan_channel, proxy }, NOT a bare id string.
+// It requires config.proxy ({ host, port, user/username, password } or { id });
+// when config.proxy is absent, proxy provisioning is skipped entirely (the
+// Plan 5 composition supplies it). We never call client.initProxy directly:
+// initProxy([id]) would post a malformed { images: [id] } that silently fails
+// to provision a proxy.
 //
 // The `client` (and, in Plan 5, its underlying provider) is INJECTED — this
 // module never imports @julio/device-control.
@@ -64,10 +74,10 @@ export function createDuoplusDeviceRegistrationAdapter({ client, config = {} }) 
         await client.installApp([id], appId);
       }
 
+      // Proxy provisioning requires config.proxy; skip when absent (do NOT send
+      // a malformed initProxy call). setSmartIp builds the correct payload.
       if (config.proxy) {
         await client.setSmartIp(id, config.proxy);
-      } else {
-        await client.initProxy([id]);
       }
     }
   };
